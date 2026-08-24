@@ -21,7 +21,7 @@ local DEFAULT_JUMP_POWER = 50
 local DEFAULT_FLY_SPEED = 50
 
 local MIN_WALK_SPEED = 0
-local MAX_WALK_SPEED = 200
+local MAX_WALK_SPEED = 500
 
 --==================================================
 -- CREATE
