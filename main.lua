@@ -3,10 +3,17 @@
 --==================================================
 
 local Players = game:GetService("Players")
+
 local Player = Players.LocalPlayer
 
+--==================================================
+-- CONFIG
+--==================================================
+
 local CONFIG = {
-    LifetimeKey = "pandaq75z6fyyhx5sfddcqwup2ku9o6",
+
+    LifetimeKey =
+        "pandaq75z6fyyhx5sfddcqwup2ku9o6",
 
     Admins = {
         [8045408189] = true,
@@ -23,28 +30,34 @@ local CONFIG = {
 }
 
 --==================================================
--- ACCESS CHECK
+-- ACCESS
 --==================================================
 
 local function GetAccess()
-    local userId = Player.UserId
 
-    if CONFIG.Admins[userId] then
+    local userId =
+        Player.UserId
+
+    if CONFIG.Admins[userId] == true then
+
         return {
             Type = "ADMIN",
             IsAdmin = true,
             IsException = false,
             RequiresKey = false
         }
+
     end
 
-    if CONFIG.Exceptions[userId] then
+    if CONFIG.Exceptions[userId] == true then
+
         return {
             Type = "EXCEPTION",
             IsAdmin = false,
             IsException = true,
             RequiresKey = false
         }
+
     end
 
     return {
@@ -58,79 +71,79 @@ end
 local Access = GetAccess()
 
 --==================================================
--- DOWNLOAD
+-- MODULE LOADER
 --==================================================
 
-local function Download(path)
-    local url = CONFIG.BaseURL .. path
+local function LoadModule(fileName)
 
-    local success, result = pcall(function()
-        return game:HttpGet(url)
-    end)
+    local url =
+        CONFIG.BaseURL .. fileName
+
+    local success, source =
+        pcall(function()
+
+            return game:HttpGet(url)
+
+        end)
 
     if not success then
-        return nil, tostring(result)
-    end
 
-    if type(result) ~= "string" or #result == 0 then
-        return nil, "Empty response"
-    end
-
-    return result
-end
-
---==================================================
--- LOAD MODULE
---==================================================
-
-local function LoadModule(path)
-    print("[Areteon] Loading:", path)
-
-    local source, downloadError = Download(path)
-
-    if not source then
         return nil,
-            "Download failed: " ..
-            tostring(downloadError)
+            "Could not download " ..
+            fileName ..
+            ": " ..
+            tostring(source)
+
     end
 
-    if type(loadstring) ~= "function" then
+    if type(source) ~= "string" then
+
         return nil,
-            "loadstring is unavailable"
+            "Invalid response for " ..
+            fileName
+
     end
 
     local fn, compileError =
         loadstring(source)
 
     if not fn then
+
         return nil,
-            "Compile error: " ..
+            "Could not compile " ..
+            fileName ..
+            ": " ..
             tostring(compileError)
+
     end
 
-    local success, result =
+    local executed, result =
         pcall(fn)
 
-    if not success then
+    if not executed then
+
         return nil,
-            "Runtime error: " ..
+            "Could not execute " ..
+            fileName ..
+            ": " ..
             tostring(result)
+
     end
 
     return result
 end
 
 --==================================================
--- START HUB
+-- HUB
 --==================================================
 
 local function StartHub()
-    print("[Areteon] Loading hub.lua")
 
     local Hub, Error =
         LoadModule("hub.lua")
 
     if not Hub then
+
         warn(
             "[Areteon] Hub error: " ..
             tostring(Error)
@@ -140,15 +153,16 @@ local function StartHub()
     end
 
     if type(Hub) ~= "table" then
+
         warn(
-            "[Areteon] hub.lua returned " ..
-            tostring(type(Hub))
+            "[Areteon] hub.lua did not return a table."
         )
 
         return false
     end
 
     if type(Hub.Start) ~= "function" then
+
         warn(
             "[Areteon] Hub.Start() does not exist."
         )
@@ -158,7 +172,9 @@ local function StartHub()
 
     local success, result =
         pcall(function()
+
             return Hub.Start({
+
                 Player = Player,
 
                 AccessType =
@@ -170,22 +186,28 @@ local function StartHub()
                 IsException =
                     Access.IsException,
 
-                BaseURL =
-                    CONFIG.BaseURL
+                -- Pass the access tables
+                -- into the hub state.
+
+                Admins =
+                    CONFIG.Admins,
+
+                Exceptions =
+                    CONFIG.Exceptions
+
             })
+
         end)
 
     if not success then
-        warn(
-            "[Areteon] Hub failed:"
-        )
 
-        warn(result)
+        warn(
+            "[Areteon] Hub failed: " ..
+            tostring(result)
+        )
 
         return false
     end
-
-    print("[Areteon] Hub started.")
 
     return true
 end
@@ -195,12 +217,12 @@ end
 --==================================================
 
 local function StartKeyGui()
-    print("[Areteon] Loading keyGui.lua")
 
     local KeyGui, Error =
         LoadModule("keyGui.lua")
 
     if not KeyGui then
+
         warn(
             "[Areteon] KeyGui error: " ..
             tostring(Error)
@@ -210,15 +232,16 @@ local function StartKeyGui()
     end
 
     if type(KeyGui) ~= "table" then
+
         warn(
-            "[Areteon] keyGui.lua returned " ..
-            tostring(type(KeyGui))
+            "[Areteon] keyGui.lua did not return a table."
         )
 
         return
     end
 
     if type(KeyGui.Create) ~= "function" then
+
         warn(
             "[Areteon] KeyGui.Create() does not exist."
         )
@@ -226,60 +249,53 @@ local function StartKeyGui()
         return
     end
 
-    local success, result =
-        pcall(function()
+    KeyGui.Create({
 
-            KeyGui.Create({
+        LifetimeKey =
+            CONFIG.LifetimeKey,
 
-                LifetimeKey =
-                    CONFIG.LifetimeKey,
+        OnVerify =
+            function(input)
 
-                OnVerify = function(input)
+                if input ==
+                    CONFIG.LifetimeKey
+                then
 
-                    if tostring(input) ==
-                        CONFIG.LifetimeKey then
-
-                        return true,
-                            "Lifetime key accepted."
-
-                    end
-
-                    return false,
-                        "Invalid lifetime key."
-                end,
-
-                OnSuccess = function()
-
-                    print(
-                        "[Areteon] Key accepted."
-                    )
-
-                    StartHub()
+                    return true,
+                        "Lifetime key accepted."
 
                 end
 
-            })
+                return false,
+                    "Invalid lifetime key."
 
-        end)
+            end,
 
-    if not success then
-        warn(
-            "[Areteon] Key GUI failed:"
-        )
+        OnSuccess =
+            function()
 
-        warn(result)
-    end
+                StartHub()
+
+            end
+
+    })
 end
 
 --==================================================
 -- START
 --==================================================
 
-print("==========================================")
 print("[Areteon] Starting...")
-print("[Areteon] UserId:", Player.UserId)
-print("[Areteon] Access:", Access.Type)
-print("==========================================")
+
+print(
+    "[Areteon] UserId:",
+    Player.UserId
+)
+
+print(
+    "[Areteon] Access:",
+    Access.Type
+)
 
 --==================================================
 -- ADMIN
@@ -316,10 +332,6 @@ end
 --==================================================
 
 if Access.RequiresKey then
-
-    print(
-        "[Areteon] Key required."
-    )
 
     StartKeyGui()
 
