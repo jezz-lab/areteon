@@ -16,15 +16,14 @@ local BASE_URL =
 local PAGE_PATHS = {
     Home = "Pages/Home.lua",
     Player = "Pages/Player.lua",
-    Settings = "Pages/Settings.lua",
+    Scripts = "Pages/Scripts.lua",
+    Settings = "Pages/Settings.lua"
 }
-
-local SCRIPT_PATH = "Pages/Scripts.lua"
 
 local Connections = {}
 
 --==================================================
--- HELPERS
+-- CREATE
 --==================================================
 
 local function Create(className, properties, parent)
@@ -37,7 +36,6 @@ local function Create(className, properties, parent)
     end
 
     object.Parent = parent
-
     return object
 end
 
@@ -48,46 +46,32 @@ local function Corner(object, radius)
 end
 
 --==================================================
--- HTTP
+-- LOAD MODULE
 --==================================================
 
-local function Download(path)
-    local success, result = pcall(function()
+local function LoadModule(path)
+    local success, source = pcall(function()
         return game:HttpGet(BASE_URL .. path)
     end)
 
     if not success then
-        return nil, tostring(result)
+        return nil, tostring(source)
     end
 
-    if type(result) ~= "string" or #result == 0 then
+    if type(source) ~= "string" or #source == 0 then
         return nil, "Empty response"
-    end
-
-    return result
-end
-
---==================================================
--- MODULE LOADER
---==================================================
-
-local function LoadModule(path)
-    local source, errorMessage = Download(path)
-
-    if not source then
-        return nil, errorMessage
     end
 
     local fn, compileError = loadstring(source)
 
     if not fn then
-        return nil, compileError
+        return nil, tostring(compileError)
     end
 
-    local success, result = pcall(fn)
+    local executed, result = pcall(fn)
 
-    if not success then
-        return nil, result
+    if not executed then
+        return nil, tostring(result)
     end
 
     return result
@@ -106,28 +90,33 @@ local function MakeDraggable(frame, handle)
     handle.InputBegan:Connect(function(input)
 
         if
-            input.UserInputType == Enum.UserInputType.MouseButton1
+            input.UserInputType ==
+                Enum.UserInputType.MouseButton1
             or
-            input.UserInputType == Enum.UserInputType.Touch
+            input.UserInputType ==
+                Enum.UserInputType.Touch
         then
 
             dragging = true
             dragStart = input.Position
             startPosition = frame.Position
 
-            local changed
+        end
 
-            changed = input.Changed:Connect(function()
+    end)
 
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
+    handle.InputEnded:Connect(function(input)
 
-                    if changed then
-                        changed:Disconnect()
-                    end
-                end
+        if
+            input.UserInputType ==
+                Enum.UserInputType.MouseButton1
+            or
+            input.UserInputType ==
+                Enum.UserInputType.Touch
+        then
 
-            end)
+            dragging = false
+
         end
 
     end)
@@ -140,9 +129,11 @@ local function MakeDraggable(frame, handle)
             end
 
             if
-                input.UserInputType ~= Enum.UserInputType.MouseMovement
+                input.UserInputType ~=
+                    Enum.UserInputType.MouseMovement
                 and
-                input.UserInputType ~= Enum.UserInputType.Touch
+                input.UserInputType ~=
+                    Enum.UserInputType.Touch
             then
                 return
             end
@@ -165,57 +156,6 @@ local function MakeDraggable(frame, handle)
 end
 
 --==================================================
--- PAGE BUTTON
---==================================================
-
-local function CreatePageButton(parent, name)
-
-    local button =
-        Create("TextButton", {
-
-            Name = name .. "Button",
-
-            Size =
-                UDim2.new(
-                    1,
-                    -16,
-                    0,
-                    40
-                ),
-
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    30,
-                    30,
-                    38
-                ),
-
-            BorderSizePixel = 0,
-
-            Font =
-                Enum.Font.GothamMedium,
-
-            Text = name,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    215,
-                    215,
-                    220
-                ),
-
-            TextSize = 13,
-
-            AutoButtonColor = true
-
-        }, parent)
-
-    Corner(button, 7)
-
-    return button
-end
-
---==================================================
 -- GUI
 --==================================================
 
@@ -232,55 +172,43 @@ local function CreateGui()
     end
 
     local Gui =
-        Create("ScreenGui", {
-
-            Name = "Areteon",
-
-            ResetOnSpawn = false,
-
-            ZIndexBehavior =
-                Enum.ZIndexBehavior.Sibling
-
-        }, PlayerGui)
+        Create(
+            "ScreenGui",
+            {
+                Name = "Areteon",
+                ResetOnSpawn = false,
+                ZIndexBehavior =
+                    Enum.ZIndexBehavior.Sibling
+            },
+            PlayerGui
+        )
 
     --==================================================
     -- MAIN
     --==================================================
 
     local Main =
-        Create("Frame", {
+        Create(
+            "Frame",
+            {
+                Name = "Main",
 
-            Name = "Main",
+                AnchorPoint =
+                    Vector2.new(0.5, 0.5),
 
-            AnchorPoint =
-                Vector2.new(0.5, 0.5),
+                Position =
+                    UDim2.new(0.5, 0, 0.5, 0),
 
-            Position =
-                UDim2.new(
-                    0.5,
-                    0,
-                    0.5,
-                    0
-                ),
+                Size =
+                    UDim2.new(0, 760, 0, 500),
 
-            Size =
-                UDim2.new(
-                    0,
-                    760,
-                    0,
-                    500
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(15, 15, 19),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    15,
-                    15,
-                    19
-                ),
-
-            BorderSizePixel = 0
-
-        }, Gui)
+                BorderSizePixel = 0
+            },
+            Gui
+        )
 
     Corner(Main, 12)
 
@@ -289,328 +217,229 @@ local function CreateGui()
     --==================================================
 
     local TopBar =
-        Create("Frame", {
+        Create(
+            "Frame",
+            {
+                Name = "TopBar",
 
-            Name = "TopBar",
+                Size =
+                    UDim2.new(1, 0, 0, 48),
 
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    0,
-                    48
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(20, 20, 25),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    20,
-                    20,
-                    25
-                ),
-
-            BorderSizePixel = 0
-
-        }, Main)
+                BorderSizePixel = 0
+            },
+            Main
+        )
 
     Corner(TopBar, 12)
 
-    Create("TextLabel", {
+    Create(
+        "TextLabel",
+        {
+            BackgroundTransparency = 1,
 
-        BackgroundTransparency = 1,
+            Position =
+                UDim2.new(0, 15, 0, 0),
 
-        Position =
-            UDim2.new(
-                0,
-                15,
-                0,
-                0
-            ),
+            Size =
+                UDim2.new(1, -60, 1, 0),
 
-        Size =
-            UDim2.new(
-                1,
-                -65,
-                1,
-                0
-            ),
+            Font =
+                Enum.Font.GothamBold,
 
-        Font =
-            Enum.Font.GothamBold,
+            Text = "ARETEON",
 
-        Text = "ARETEON",
+            TextColor3 =
+                Color3.fromRGB(255, 255, 255),
 
-        TextColor3 =
-            Color3.fromRGB(
-                255,
-                255,
-                255
-            ),
+            TextSize = 17,
 
-        TextSize = 17,
-
-        TextXAlignment =
-            Enum.TextXAlignment.Left
-
-    }, TopBar)
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        TopBar
+    )
 
     --==================================================
     -- CLOSE
     --==================================================
 
     local Close =
-        Create("TextButton", {
+        Create(
+            "TextButton",
+            {
+                Name = "Close",
 
-            Name = "Close",
+                BackgroundTransparency = 1,
 
-            BackgroundTransparency = 1,
+                Position =
+                    UDim2.new(1, -45, 0, 7),
 
-            Position =
-                UDim2.new(
-                    1,
-                    -45,
-                    0,
-                    7
-                ),
+                Size =
+                    UDim2.new(0, 35, 0, 34),
 
-            Size =
-                UDim2.new(
-                    0,
-                    35,
-                    0,
-                    34
-                ),
+                Font =
+                    Enum.Font.GothamBold,
 
-            Font =
-                Enum.Font.GothamBold,
+                Text = "×",
 
-            Text = "×",
+                TextColor3 =
+                    Color3.fromRGB(230, 230, 235),
 
-            TextColor3 =
-                Color3.fromRGB(
-                    230,
-                    230,
-                    235
-                ),
-
-            TextSize = 23
-
-        }, TopBar)
+                TextSize = 23
+            },
+            TopBar
+        )
 
     --==================================================
     -- SIDEBAR
     --==================================================
 
     local Sidebar =
-        Create("Frame", {
+        Create(
+            "Frame",
+            {
+                Name = "Sidebar",
 
-            Name = "Sidebar",
+                Position =
+                    UDim2.new(0, 0, 0, 48),
 
-            Position =
-                UDim2.new(
-                    0,
-                    0,
-                    0,
-                    48
-                ),
+                Size =
+                    UDim2.new(0, 155, 1, -48),
 
-            Size =
-                UDim2.new(
-                    0,
-                    155,
-                    1,
-                    -48
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(19, 19, 24),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    19,
-                    19,
-                    24
-                ),
+                BorderSizePixel = 0
+            },
+            Main
+        )
 
-            BorderSizePixel = 0
+    Create(
+        "UIPadding",
+        {
+            PaddingTop = UDim.new(0, 12),
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 8)
+        },
+        Sidebar
+    )
 
-        }, Main)
-
-    Create("UIPadding", {
-
-        PaddingTop =
-            UDim.new(0, 12),
-
-        PaddingBottom =
-            UDim.new(0, 12),
-
-        PaddingLeft =
-            UDim.new(0, 8),
-
-        PaddingRight =
-            UDim.new(0, 8)
-
-    }, Sidebar)
-
-    Create("UIListLayout", {
-
-        Padding =
-            UDim.new(0, 7),
-
-        SortOrder =
-            Enum.SortOrder.LayoutOrder
-
-    }, Sidebar)
+    Create(
+        "UIListLayout",
+        {
+            Padding = UDim.new(0, 7),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        },
+        Sidebar
+    )
 
     --==================================================
-    -- SCROLLABLE CONTENT
+    -- CONTENT SCROLL
     --==================================================
 
     local ContentScroll =
-        Create("ScrollingFrame", {
+        Create(
+            "ScrollingFrame",
+            {
+                Name = "ContentScroll",
 
-            Name = "ContentScroll",
+                Position =
+                    UDim2.new(0, 155, 0, 48),
 
-            Position =
-                UDim2.new(
-                    0,
-                    155,
-                    0,
-                    48
-                ),
+                Size =
+                    UDim2.new(1, -155, 1, -48),
 
-            Size =
-                UDim2.new(
-                    1,
-                    -155,
-                    1,
-                    -48
-                ),
+                BackgroundTransparency = 1,
 
-            BackgroundTransparency = 1,
+                BorderSizePixel = 0,
 
-            BorderSizePixel = 0,
+                ClipsDescendants = true,
 
-            ClipsDescendants = true,
+                CanvasSize =
+                    UDim2.new(0, 0, 0, 0),
 
-            CanvasSize =
-                UDim2.new(
-                    0,
-                    0,
-                    0,
-                    0
-                ),
+                AutomaticCanvasSize =
+                    Enum.AutomaticSize.Y,
 
-            AutomaticCanvasSize =
-                Enum.AutomaticSize.Y,
+                ScrollingDirection =
+                    Enum.ScrollingDirection.Y,
 
-            ScrollingDirection =
-                Enum.ScrollingDirection.Y,
+                ScrollBarThickness = 6,
 
-            ScrollBarThickness = 6,
+                ScrollBarImageTransparency = 0.15,
 
-            ScrollBarImageTransparency = 0.15,
-
-            VerticalScrollBarInset =
-                Enum.ScrollBarInset.ScrollBar,
-
-            ScrollingEnabled = true,
-
-            ElasticBehavior =
-                Enum.ElasticBehavior.Always
-
-        }, Main)
+                VerticalScrollBarInset =
+                    Enum.ScrollBarInset.ScrollBar
+            },
+            Main
+        )
 
     --==================================================
-    -- PAGE CONTAINER
+    -- CONTENT
     --==================================================
 
     local Content =
-        Create("Frame", {
+        Create(
+            "Frame",
+            {
+                Name = "Content",
 
-            Name = "Content",
+                Size =
+                    UDim2.new(1, -10, 0, 0),
 
-            Size =
-                UDim2.new(
-                    1,
-                    -8,
-                    0,
-                    0
-                ),
+                BackgroundTransparency = 1,
 
-            BackgroundTransparency = 1,
+                BorderSizePixel = 0,
 
-            BorderSizePixel = 0,
-
-            AutomaticSize =
-                Enum.AutomaticSize.Y
-
-        }, ContentScroll)
+                AutomaticSize =
+                    Enum.AutomaticSize.Y
+            },
+            ContentScroll
+        )
 
     --==================================================
     -- FLOATING ICON
     --==================================================
 
     local Icon =
-        Create("TextButton", {
+        Create(
+            "TextButton",
+            {
+                Name = "ToggleIcon",
 
-            Name = "ToggleIcon",
+                AnchorPoint =
+                    Vector2.new(0.5, 0.5),
 
-            AnchorPoint =
-                Vector2.new(
-                    0.5,
-                    0.5
-                ),
+                Position =
+                    UDim2.new(0, 70, 0.5, 0),
 
-            Position =
-                UDim2.new(
-                    0,
-                    70,
-                    0.5,
-                    0
-                ),
+                Size =
+                    UDim2.new(0, 56, 0, 56),
 
-            Size =
-                UDim2.new(
-                    0,
-                    56,
-                    0,
-                    56
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(25, 25, 32),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    25,
-                    25,
-                    32
-                ),
+                BorderSizePixel = 0,
 
-            BorderSizePixel = 0,
+                Font =
+                    Enum.Font.GothamBold,
 
-            Font =
-                Enum.Font.GothamBold,
+                Text = "A",
 
-            Text = "A",
+                TextColor3 =
+                    Color3.fromRGB(255, 255, 255),
 
-            TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
+                TextSize = 20,
 
-            TextSize = 20,
-
-            ZIndex = 100,
-
-            AutoButtonColor = true
-
-        }, Gui)
+                ZIndex = 100
+            },
+            Gui
+        )
 
     Corner(Icon, 28)
-
-    local stroke =
-        Instance.new("UIStroke")
-
-    stroke.Thickness = 1.5
-    stroke.Transparency = 0.2
-    stroke.Parent = Icon
 
     return
         Gui,
@@ -624,54 +453,48 @@ local function CreateGui()
 end
 
 --==================================================
--- DESTROY
+-- PAGE BUTTON
 --==================================================
 
-local function DestroyHub(state)
+local function CreatePageButton(parent, name)
 
-    if not state or state.Destroyed then
-        return
-    end
+    local button =
+        Create(
+            "TextButton",
+            {
+                Name = name .. "Button",
 
-    state.Destroyed = true
+                Size =
+                    UDim2.new(1, -16, 0, 40),
 
-    for _, connection in
-        ipairs(Connections)
-    do
+                BackgroundColor3 =
+                    Color3.fromRGB(30, 30, 38),
 
-        pcall(function()
-            connection:Disconnect()
-        end)
+                BorderSizePixel = 0,
 
-    end
+                Font =
+                    Enum.Font.GothamMedium,
 
-    table.clear(Connections)
+                Text = name,
 
-    if state.Gui then
+                TextColor3 =
+                    Color3.fromRGB(215, 215, 220),
 
-        pcall(function()
-            state.Gui:Destroy()
-        end)
+                TextSize = 13
+            },
+            parent
+        )
 
-    end
+    Corner(button, 7)
 
-    Hub.Gui = nil
-    Hub.State = nil
-
-    print(
-        "[Areteon] Hub terminated."
-    )
+    return button
 end
 
 --==================================================
 -- LOAD PAGE
 --==================================================
 
-local function LoadPage(
-    name,
-    path,
-    state
-)
+local function LoadPage(name, path, state)
 
     local module, errorMessage =
         LoadModule(path)
@@ -681,31 +504,23 @@ local function LoadPage(
         warn(
             "[Areteon] " ..
             name ..
-            " failed:"
-        )
-
-        warn(errorMessage)
-
-        return nil
-    end
-
-    if type(module) ~= "table" then
-
-        warn(
-            "[Areteon] " ..
-            name ..
-            " did not return a table."
+            " failed: " ..
+            tostring(errorMessage)
         )
 
         return nil
     end
 
-    if type(module.Start) ~= "function" then
+    if
+        type(module) ~= "table"
+        or
+        type(module.Start) ~= "function"
+    then
 
         warn(
-            "[Areteon] " ..
+            "[Areteon] Invalid " ..
             name ..
-            ".Start() is missing."
+            " page."
         )
 
         return nil
@@ -713,9 +528,7 @@ local function LoadPage(
 
     local success, page =
         pcall(function()
-
             return module.Start(state)
-
         end)
 
     if not success then
@@ -723,31 +536,23 @@ local function LoadPage(
         warn(
             "[Areteon] " ..
             name ..
-            " error:"
-        )
-
-        warn(page)
-
-        return nil
-    end
-
-    if not page then
-
-        warn(
-            "[Areteon] " ..
-            name ..
-            " returned nil."
+            " error: " ..
+            tostring(page)
         )
 
         return nil
     end
 
-    if not page:IsA("GuiObject") then
+    if
+        not page
+        or
+        not page:IsA("GuiObject")
+    then
 
         warn(
             "[Areteon] " ..
             name ..
-            " must return a GuiObject."
+            " did not return a GuiObject."
         )
 
         return nil
@@ -756,6 +561,36 @@ local function LoadPage(
     page.Visible = false
 
     return page
+end
+
+--==================================================
+-- DESTROY
+--==================================================
+
+local function DestroyHub(state)
+
+    if state.Destroyed then
+        return
+    end
+
+    state.Destroyed = true
+
+    for _, connection in ipairs(Connections) do
+        pcall(function()
+            connection:Disconnect()
+        end)
+    end
+
+    table.clear(Connections)
+
+    if state.Gui then
+        pcall(function()
+            state.Gui:Destroy()
+        end)
+    end
+
+    Hub.Gui = nil
+    Hub.State = nil
 end
 
 --==================================================
@@ -777,21 +612,33 @@ function Hub.Start(options)
         Close =
         CreateGui()
 
+    --==================================================
+    -- SHARED STATE
+    --==================================================
+
     local state = {
 
         Player =
-            options.Player or
-            LocalPlayer,
+            options.Player or LocalPlayer,
 
         AccessType =
-            options.AccessType or
-            "USER",
+            options.AccessType or "USER",
 
         IsAdmin =
             options.IsAdmin == true,
 
         IsException =
             options.IsException == true,
+
+        -- Passed from main.lua
+
+        Admins =
+            options.Admins or {},
+
+        Exceptions =
+            options.Exceptions or {},
+
+        -- Shared hub objects
 
         Gui = Gui,
 
@@ -808,6 +655,8 @@ function Hub.Start(options)
 
         Icon = Icon,
 
+        -- Pages
+
         Pages = {},
 
         Buttons = {},
@@ -818,7 +667,7 @@ function Hub.Start(options)
     }
 
     --==================================================
-    -- MAIN DRAG
+    -- DRAG HUB
     --==================================================
 
     MakeDraggable(
@@ -826,51 +675,39 @@ function Hub.Start(options)
         TopBar
     )
 
-    --==================================================
-    -- ICON DRAG
-    --==================================================
-
     MakeDraggable(
         Icon,
         Icon
     )
 
     --==================================================
-    -- ICON TOGGLE
+    -- TOGGLE
     --==================================================
 
-    Icon.MouseButton1Click:Connect(
-        function()
+    Icon.MouseButton1Click:Connect(function()
 
-            if state.Destroyed then
-                return
-            end
-
-            Main.Visible =
-                not Main.Visible
-
+        if state.Destroyed then
+            return
         end
-    )
+
+        Main.Visible =
+            not Main.Visible
+
+    end)
 
     --==================================================
     -- CLOSE
     --==================================================
 
-    Close.MouseButton1Click:Connect(
-        function()
-
-            DestroyHub(state)
-
-        end
-    )
+    Close.MouseButton1Click:Connect(function()
+        DestroyHub(state)
+    end)
 
     --==================================================
     -- LOAD PAGES
     --==================================================
 
-    for name, path in
-        pairs(PAGE_PATHS)
-    do
+    for name, path in pairs(PAGE_PATHS) do
 
         local page =
             LoadPage(
@@ -889,80 +726,7 @@ function Hub.Start(options)
     end
 
     --==================================================
-    -- OPTIONAL SCRIPTS
-    --==================================================
-
-    local scriptSource =
-        Download(SCRIPT_PATH)
-
-    if scriptSource then
-
-        local fn, compileError =
-            loadstring(scriptSource)
-
-        if fn then
-
-            local success, module =
-                pcall(fn)
-
-            if
-                success
-                and
-                type(module) == "table"
-                and
-                type(module.Start) == "function"
-            then
-
-                local ok, page =
-                    pcall(function()
-
-                        return module.Start(state)
-
-                    end)
-
-                if
-                    ok
-                    and
-                    page
-                    and
-                    page:IsA("GuiObject")
-                then
-
-                    page.Name = "Scripts"
-
-                    page.Visible = false
-
-                    state.Pages.Scripts =
-                        page
-
-                    print(
-                        "[Areteon] Scripts loaded."
-                    )
-
-                end
-
-            end
-
-        else
-
-            warn(
-                "[Areteon] Scripts compile error:"
-            )
-
-            warn(compileError)
-
-        end
-
-    else
-
-        print(
-            "[Areteon] Scripts.lua not found. Skipping."
-        )
-
-    end
-
-    --==================================================
-    -- SIDEBAR BUTTONS
+    -- NAVIGATION
     --==================================================
 
     local pageOrder = {
@@ -972,9 +736,7 @@ function Hub.Start(options)
         "Settings"
     }
 
-    for _, name in
-        ipairs(pageOrder)
-    do
+    for _, name in ipairs(pageOrder) do
 
         local page =
             state.Pages[name]
@@ -997,14 +759,15 @@ function Hub.Start(options)
                         return
                     end
 
+                    -- Hide every page
+
                     for _, otherPage in
                         pairs(state.Pages)
                     do
-
-                        otherPage.Visible =
-                            false
-
+                        otherPage.Visible = false
                     end
+
+                    -- Reset buttons
 
                     for _, otherButton in
                         pairs(state.Buttons)
@@ -1019,13 +782,14 @@ function Hub.Start(options)
 
                     end
 
+                    -- Show selected page
+
                     page.Visible = true
 
+                    -- Reset vertical scrollbar
+
                     ContentScroll.CanvasPosition =
-                        Vector2.new(
-                            0,
-                            0
-                        )
+                        Vector2.new(0, 0)
 
                     button.BackgroundColor3 =
                         Color3.fromRGB(
@@ -1041,22 +805,13 @@ function Hub.Start(options)
             )
 
         end
-
     end
 
     --==================================================
-    -- DEFAULT HOME
+    -- DEFAULT PAGE
     --==================================================
 
     if state.Pages.Home then
-
-        for _, page in
-            pairs(state.Pages)
-        do
-
-            page.Visible = false
-
-        end
 
         state.Pages.Home.Visible = true
 
@@ -1072,15 +827,14 @@ function Hub.Start(options)
                 )
 
         end
-
     end
+
+    --==================================================
+    -- SAVE
+    --==================================================
 
     Hub.Gui = Gui
     Hub.State = state
-
-    print(
-        "[Areteon] Hub started."
-    )
 
     return state
 end
