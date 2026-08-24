@@ -5,9 +5,6 @@
 local Settings = {}
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-local LocalPlayer = Players.LocalPlayer
 
 --==================================================
 -- DEFAULT THEME
@@ -26,7 +23,7 @@ Settings.DefaultSettings = {
 }
 
 --==================================================
--- HELPERS
+-- CREATE
 --==================================================
 
 local function Create(className, properties, parent)
@@ -49,12 +46,35 @@ local function Corner(object, radius)
     corner.Parent = object
 end
 
-local function ClampColor(value)
-    return math.clamp(
-        tonumber(value) or 0,
-        0,
-        255
-    )
+--==================================================
+-- THEME
+--==================================================
+
+local function ApplyTheme(state)
+
+    local theme = state.Theme
+
+    if state.Main then
+        state.Main.BackgroundColor3 =
+            theme.Background
+
+        state.Main.BackgroundTransparency =
+            state.Settings.BackgroundTransparency
+    end
+
+    if state.Sidebar then
+        state.Sidebar.BackgroundColor3 =
+            theme.Background
+    end
+
+    if state.TopBar then
+        state.TopBar.BackgroundColor3 =
+            theme.Panel
+    end
+
+    -- Floating icon intentionally does NOT use
+    -- the theme colors.
+
 end
 
 --==================================================
@@ -73,9 +93,10 @@ local function OpenColorPicker(
         state.ColorPicker = nil
     end
 
-    local Gui = state.Gui
-
-    if not Gui then
+    if not state.Gui then
+        warn(
+            "[Areteon] Settings: state.Gui missing."
+        )
         return
     end
 
@@ -99,9 +120,9 @@ local function OpenColorPicker(
                 Size =
                     UDim2.new(
                         0,
-                        320,
+                        300,
                         0,
-                        330
+                        260
                     ),
 
                 BackgroundColor3 =
@@ -115,12 +136,12 @@ local function OpenColorPicker(
 
                 ZIndex = 100
             },
-            Gui
+            state.Gui
         )
 
-    Corner(Picker, 10)
-
     state.ColorPicker = Picker
+
+    Corner(Picker, 10)
 
     --==================================================
     -- TITLE
@@ -151,7 +172,7 @@ local function OpenColorPicker(
                 Enum.Font.GothamBold,
 
             Text =
-                "Change " .. colorName,
+                "Choose " .. colorName,
 
             TextColor3 =
                 Color3.fromRGB(
@@ -160,7 +181,7 @@ local function OpenColorPicker(
                     255
                 ),
 
-            TextSize = 16,
+            TextSize = 15,
 
             TextXAlignment =
                 Enum.TextXAlignment.Left,
@@ -191,7 +212,7 @@ local function OpenColorPicker(
                         1,
                         -30,
                         0,
-                        45
+                        40
                     ),
 
                 BackgroundColor3 =
@@ -204,10 +225,10 @@ local function OpenColorPicker(
             Picker
         )
 
-    Corner(Preview, 7)
+    Corner(Preview, 6)
 
     --==================================================
-    -- RGB
+    -- RGB VALUES
     --==================================================
 
     local R =
@@ -225,8 +246,8 @@ local function OpenColorPicker(
             currentColor.B * 255
         )
 
-    local function CreateRGBInput(
-        name,
+    local function RGBInput(
+        label,
         value,
         y
     )
@@ -255,7 +276,7 @@ local function OpenColorPicker(
                 Font =
                     Enum.Font.GothamBold,
 
-                Text = name,
+                Text = label,
 
                 TextColor3 =
                     Color3.fromRGB(
@@ -293,9 +314,9 @@ local function OpenColorPicker(
 
                     BackgroundColor3 =
                         Color3.fromRGB(
-                            35,
-                            35,
-                            43
+                            40,
+                            40,
+                            48
                         ),
 
                     BorderSizePixel = 0,
@@ -328,24 +349,24 @@ local function OpenColorPicker(
     end
 
     local RBox =
-        CreateRGBInput(
+        RGBInput(
             "R",
             R,
-            105
+            100
         )
 
     local GBox =
-        CreateRGBInput(
+        RGBInput(
             "G",
             G,
-            145
+            135
         )
 
     local BBox =
-        CreateRGBInput(
+        RGBInput(
             "B",
             B,
-            185
+            170
         )
 
     --==================================================
@@ -355,13 +376,25 @@ local function OpenColorPicker(
     local function UpdatePreview()
 
         local r =
-            ClampColor(RBox.Text)
+            math.clamp(
+                tonumber(RBox.Text) or R,
+                0,
+                255
+            )
 
         local g =
-            ClampColor(GBox.Text)
+            math.clamp(
+                tonumber(GBox.Text) or G,
+                0,
+                255
+            )
 
         local b =
-            ClampColor(BBox.Text)
+            math.clamp(
+                tonumber(BBox.Text) or B,
+                0,
+                255
+            )
 
         Preview.BackgroundColor3 =
             Color3.fromRGB(
@@ -369,16 +402,20 @@ local function OpenColorPicker(
                 g,
                 b
             )
+
     end
 
-    RBox:GetPropertyChangedSignal("Text"):
-        Connect(UpdatePreview)
+    RBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(UpdatePreview)
 
-    GBox:GetPropertyChangedSignal("Text"):
-        Connect(UpdatePreview)
+    GBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(UpdatePreview)
 
-    BBox:GetPropertyChangedSignal("Text"):
-        Connect(UpdatePreview)
+    BBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(UpdatePreview)
 
     --==================================================
     -- APPLY
@@ -392,23 +429,23 @@ local function OpenColorPicker(
                     UDim2.new(
                         0,
                         20,
-                        0,
-                        240
+                        1,
+                        -45
                     ),
 
                 Size =
                     UDim2.new(
                         0,
-                        130,
+                        120,
                         0,
-                        38
+                        32
                     ),
 
                 BackgroundColor3 =
                     Color3.fromRGB(
-                        45,
-                        45,
-                        58
+                        50,
+                        50,
+                        65
                     ),
 
                 BorderSizePixel = 0,
@@ -432,19 +469,31 @@ local function OpenColorPicker(
             Picker
         )
 
-    Corner(Apply, 7)
+    Corner(Apply, 6)
 
     Apply.MouseButton1Click:Connect(
         function()
 
             local r =
-                ClampColor(RBox.Text)
+                math.clamp(
+                    tonumber(RBox.Text) or R,
+                    0,
+                    255
+                )
 
             local g =
-                ClampColor(GBox.Text)
+                math.clamp(
+                    tonumber(GBox.Text) or G,
+                    0,
+                    255
+                )
 
             local b =
-                ClampColor(BBox.Text)
+                math.clamp(
+                    tonumber(BBox.Text) or B,
+                    0,
+                    255
+                )
 
             local newColor =
                 Color3.fromRGB(
@@ -472,25 +521,25 @@ local function OpenColorPicker(
             {
                 Position =
                     UDim2.new(
-                        0,
-                        165,
-                        0,
-                        240
+                        1,
+                        -140,
+                        1,
+                        -45
                     ),
 
                 Size =
                     UDim2.new(
                         0,
-                        130,
+                        120,
                         0,
-                        38
+                        32
                     ),
 
                 BackgroundColor3 =
                     Color3.fromRGB(
-                        35,
-                        35,
-                        43
+                        40,
+                        40,
+                        48
                     ),
 
                 BorderSizePixel = 0,
@@ -514,7 +563,7 @@ local function OpenColorPicker(
             Picker
         )
 
-    Corner(Cancel, 7)
+    Corner(Cancel, 6)
 
     Cancel.MouseButton1Click:Connect(
         function()
@@ -529,62 +578,13 @@ local function OpenColorPicker(
 end
 
 --==================================================
--- APPLY THEME
---==================================================
-
-local function ApplyTheme(state)
-
-    local Theme = state.Theme
-
-    if not Theme then
-        return
-    end
-
-    -- Main hub background
-
-    if state.Main then
-
-        state.Main.BackgroundColor3 =
-            Theme.Background
-
-        state.Main.BackgroundTransparency =
-            state.Settings.BackgroundTransparency
-
-    end
-
-    -- Sidebar
-
-    if state.Sidebar then
-
-        state.Sidebar.BackgroundColor3 =
-            Theme.Background
-
-    end
-
-    -- Top bar
-
-    if state.TopBar then
-
-        state.TopBar.BackgroundColor3 =
-            Theme.Panel
-
-    end
-
-    -- IMPORTANT:
-    -- Floating icon is intentionally
-    -- NOT modified here.
-
-end
-
---==================================================
 -- COLOR ROW
 --==================================================
 
 local function CreateColorRow(
     state,
     parent,
-    name,
-    color
+    name
 )
 
     local Row =
@@ -604,45 +604,44 @@ local function CreateColorRow(
             parent
         )
 
-    local Label =
-        Create(
-            "TextLabel",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        10,
-                        0,
-                        0
-                    ),
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0,
+                    10,
+                    0,
+                    0
+                ),
 
-                Size =
-                    UDim2.new(
-                        1,
-                        -70,
-                        1,
-                        0
-                    ),
+            Size =
+                UDim2.new(
+                    1,
+                    -70,
+                    1,
+                    0
+                ),
 
-                BackgroundTransparency = 1,
+            BackgroundTransparency = 1,
 
-                Font =
-                    Enum.Font.GothamMedium,
+            Font =
+                Enum.Font.GothamMedium,
 
-                Text = name,
+            Text = name,
 
-                TextColor3 =
-                    state.Theme.Primary,
+            TextColor3 =
+                state.Theme.Primary,
 
-                TextSize = 12,
+            TextSize = 12,
 
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            Row
-        )
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Row
+    )
 
-    local Preview =
+    local ColorButton =
         Create(
             "TextButton",
             {
@@ -663,7 +662,7 @@ local function CreateColorRow(
                     ),
 
                 BackgroundColor3 =
-                    color,
+                    state.Theme[name],
 
                 BorderSizePixel = 0,
 
@@ -672,9 +671,9 @@ local function CreateColorRow(
             Row
         )
 
-    Corner(Preview, 6)
+    Corner(ColorButton, 6)
 
-    Preview.MouseButton1Click:Connect(
+    ColorButton.MouseButton1Click:Connect(
         function()
 
             OpenColorPicker(
@@ -686,7 +685,7 @@ local function CreateColorRow(
                     state.Theme[name] =
                         newColor
 
-                    Preview.BackgroundColor3 =
+                    ColorButton.BackgroundColor3 =
                         newColor
 
                     ApplyTheme(state)
@@ -697,7 +696,6 @@ local function CreateColorRow(
         end
     )
 
-    return Row
 end
 
 --==================================================
@@ -708,7 +706,7 @@ local function CreateDropdown(
     state,
     parent,
     title,
-    height
+    expandedHeight
 )
 
     local Box =
@@ -720,7 +718,7 @@ local function CreateDropdown(
                         1,
                         0,
                         0,
-                        height
+                        expandedHeight
                     ),
 
                 BackgroundColor3 =
@@ -795,7 +793,7 @@ local function CreateDropdown(
                         1,
                         -20,
                         0,
-                        height - 50
+                        expandedHeight - 50
                     ),
 
                 BackgroundTransparency = 1
@@ -803,14 +801,14 @@ local function CreateDropdown(
             Box
         )
 
-    local expanded = true
+    local Expanded = true
 
     Header.MouseButton1Click:Connect(
         function()
 
-            expanded = not expanded
+            Expanded = not Expanded
 
-            if expanded then
+            if Expanded then
 
                 Header.Text =
                     "^  " .. title
@@ -820,7 +818,7 @@ local function CreateDropdown(
                         1,
                         0,
                         0,
-                        height
+                        expandedHeight
                     )
 
                 Content.Visible = true
@@ -854,15 +852,17 @@ end
 
 function Settings.Start(state)
 
-    if not state or not state.Content then
+    if not state then
+        warn("[Areteon] Settings: state missing.")
+        return
+    end
 
+    if not state.Content then
         warn(
             "[Areteon] Settings: " ..
-            "state.Content is missing."
+            "state.Content missing."
         )
-
-        return nil
-
+        return
     end
 
     --==================================================
@@ -952,7 +952,7 @@ function Settings.Start(state)
     )
 
     --==================================================
-    -- DROPDOWN CONTAINER
+    -- DROPDOWN LIST
     --==================================================
 
     local List =
@@ -980,21 +980,20 @@ function Settings.Start(state)
             Page
         )
 
-    local Layout =
-        Create(
-            "UIListLayout",
-            {
-                Padding =
-                    UDim.new(
-                        0,
-                        10
-                    ),
+    Create(
+        "UIListLayout",
+        {
+            Padding =
+                UDim.new(
+                    0,
+                    10
+                ),
 
-                SortOrder =
-                    Enum.SortOrder.LayoutOrder
-            },
-            List
-        )
+            SortOrder =
+                Enum.SortOrder.LayoutOrder
+        },
+        List
+    )
 
     --==================================================
     -- COLORS
@@ -1005,42 +1004,37 @@ function Settings.Start(state)
             state,
             List,
             "Colors",
-            260
+            250
         )
 
     CreateColorRow(
         state,
         ColorsContent,
-        "Background",
-        state.Theme.Background
+        "Background"
     )
 
     CreateColorRow(
         state,
         ColorsContent,
-        "Primary",
-        state.Theme.Primary
+        "Primary"
     )
 
     CreateColorRow(
         state,
         ColorsContent,
-        "Secondary",
-        state.Theme.Secondary
+        "Secondary"
     )
 
     CreateColorRow(
         state,
         ColorsContent,
-        "Buttons",
-        state.Theme.Buttons
+        "Buttons"
     )
 
     CreateColorRow(
         state,
         ColorsContent,
-        "Panel",
-        state.Theme.Panel
+        "Panel"
     )
 
     --==================================================
@@ -1052,7 +1046,7 @@ function Settings.Start(state)
             state,
             List,
             "General",
-            155
+            120
         )
 
     Create(
@@ -1148,7 +1142,7 @@ function Settings.Start(state)
                     Transparency.Text
                 )
 
-            if not value then
+            if value == nil then
                 return
             end
 
@@ -1201,7 +1195,7 @@ function Settings.Start(state)
                         1,
                         -10,
                         0,
-                        30
+                        25
                     ),
 
                 BackgroundTransparency = 1,
@@ -1235,7 +1229,7 @@ function Settings.Start(state)
                             0,
                             5,
                             0,
-                            42
+                            38
                         ),
 
                     Size =
@@ -1243,12 +1237,17 @@ function Settings.Start(state)
                             1,
                             -10,
                             0,
-                            180
+                            190
                         ),
 
                     BackgroundTransparency = 1,
 
                     BorderSizePixel = 0,
+
+                    ScrollBarThickness = 5,
+
+                    AutomaticCanvasSize =
+                        Enum.AutomaticSize.Y,
 
                     CanvasSize =
                         UDim2.new(
@@ -1256,12 +1255,7 @@ function Settings.Start(state)
                             0,
                             0,
                             0
-                        ),
-
-                    AutomaticCanvasSize =
-                        Enum.AutomaticSize.Y,
-
-                    ScrollBarThickness = 5
+                        )
                 },
                 AdminContent
             )
@@ -1289,14 +1283,10 @@ function Settings.Start(state)
                 )
             do
 
-                if
-                    not child:IsA(
-                        "UIListLayout"
-                    )
-                then
-
+                if not child:IsA(
+                    "UIListLayout"
+                ) then
                     child:Destroy()
-
                 end
 
             end
@@ -1342,7 +1332,7 @@ function Settings.Start(state)
 
                         Size =
                             UDim2.new(
-                                0.45,
+                                0.5,
                                 0,
                                 0,
                                 20
@@ -1354,7 +1344,7 @@ function Settings.Start(state)
                             Enum.Font.GothamMedium,
 
                         Text =
-                            player.Name,
+                            player.DisplayName,
 
                         TextColor3 =
                             state.Theme.Primary,
@@ -1372,48 +1362,10 @@ function Settings.Start(state)
                     {
                         Position =
                             UDim2.new(
-                                0.45,
-                                0,
-                                0,
-                                5
-                            ),
-
-                        Size =
-                            UDim2.new(
-                                0.55,
-                                -10,
-                                0,
-                                20
-                            ),
-
-                        BackgroundTransparency = 1,
-
-                        Font =
-                            Enum.Font.Gotham,
-
-                        Text =
-                            "Status: Unknown",
-
-                        TextColor3 =
-                            state.Theme.Secondary,
-
-                        TextSize = 11,
-
-                        TextXAlignment =
-                            Enum.TextXAlignment.Right
-                    },
-                    Row
-                )
-
-                Create(
-                    "TextLabel",
-                    {
-                        Position =
-                            UDim2.new(
                                 0,
                                 10,
                                 0,
-                                26
+                                25
                             ),
 
                         Size =
@@ -1430,7 +1382,8 @@ function Settings.Start(state)
                             Enum.Font.Gotham,
 
                         Text =
-                            "Key: Unknown   •   Time: N/A",
+                            "@" ..
+                            player.Name,
 
                         TextColor3 =
                             state.Theme.Secondary,
@@ -1460,7 +1413,7 @@ function Settings.Start(state)
     end
 
     --==================================================
-    -- APPLY INITIAL THEME
+    -- INITIAL THEME
     --==================================================
 
     ApplyTheme(state)
