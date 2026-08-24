@@ -1,7 +1,5 @@
-```lua
 --==================================================
 -- ARETEON | main.lua
--- Delta-compatible loader
 --==================================================
 
 local Players = game:GetService("Players")
@@ -25,7 +23,7 @@ local CONFIG = {
 }
 
 --==================================================
--- ACCESS
+-- ACCESS CHECK
 --==================================================
 
 local function GetAccess()
@@ -60,55 +58,62 @@ end
 local Access = GetAccess()
 
 --==================================================
--- HTTP / LOADSTRING
+-- DOWNLOAD
 --==================================================
 
 local function Download(path)
     local url = CONFIG.BaseURL .. path
 
-    local ok, result = pcall(function()
+    local success, result = pcall(function()
         return game:HttpGet(url)
     end)
 
-    if not ok then
-        return nil, "HTTP error: " .. tostring(result)
+    if not success then
+        return nil, tostring(result)
     end
 
     if type(result) ~= "string" or #result == 0 then
-        return nil, "Empty response from " .. path
+        return nil, "Empty response"
     end
 
     return result
 end
 
-local function LoadRemote(path)
+--==================================================
+-- LOAD MODULE
+--==================================================
+
+local function LoadModule(path)
+    print("[Areteon] Loading:", path)
+
     local source, downloadError = Download(path)
 
     if not source then
-        return nil, downloadError
+        return nil,
+            "Download failed: " ..
+            tostring(downloadError)
     end
 
     if type(loadstring) ~= "function" then
-        return nil, "loadstring is unavailable in this executor"
+        return nil,
+            "loadstring is unavailable"
     end
 
-    local fn, compileError = loadstring(source)
+    local fn, compileError =
+        loadstring(source)
 
     if not fn then
         return nil,
-            "Compile error in " ..
-            path ..
-            ": " ..
+            "Compile error: " ..
             tostring(compileError)
     end
 
-    local ok, result = pcall(fn)
+    local success, result =
+        pcall(fn)
 
-    if not ok then
+    if not success then
         return nil,
-            "Runtime error in " ..
-            path ..
-            ": " ..
+            "Runtime error: " ..
             tostring(result)
     end
 
@@ -116,44 +121,71 @@ local function LoadRemote(path)
 end
 
 --==================================================
--- HUB
+-- START HUB
 --==================================================
 
 local function StartHub()
     print("[Areteon] Loading hub.lua")
 
-    local Hub, err = LoadRemote("hub.lua")
+    local Hub, Error =
+        LoadModule("hub.lua")
 
     if not Hub then
-        warn("[Areteon] " .. tostring(err))
+        warn(
+            "[Areteon] Hub error: " ..
+            tostring(Error)
+        )
+
         return false
     end
 
     if type(Hub) ~= "table" then
-        warn("[Areteon] hub.lua returned " .. type(Hub))
+        warn(
+            "[Areteon] hub.lua returned " ..
+            tostring(type(Hub))
+        )
+
         return false
     end
 
     if type(Hub.Start) ~= "function" then
-        warn("[Areteon] hub.lua has no Start() function")
+        warn(
+            "[Areteon] Hub.Start() does not exist."
+        )
+
         return false
     end
 
-    local ok, startError = pcall(function()
-        Hub.Start({
-            Player = Player,
-            AccessType = Access.Type,
-            IsAdmin = Access.IsAdmin,
-            IsException = Access.IsException,
-            BaseURL = CONFIG.BaseURL
-        })
-    end)
+    local success, result =
+        pcall(function()
+            return Hub.Start({
+                Player = Player,
 
-    if not ok then
-        warn("[Areteon] Hub.Start failed:")
-        warn(startError)
+                AccessType =
+                    Access.Type,
+
+                IsAdmin =
+                    Access.IsAdmin,
+
+                IsException =
+                    Access.IsException,
+
+                BaseURL =
+                    CONFIG.BaseURL
+            })
+        end)
+
+    if not success then
+        warn(
+            "[Areteon] Hub failed:"
+        )
+
+        warn(result)
+
         return false
     end
+
+    print("[Areteon] Hub started.")
 
     return true
 end
@@ -165,44 +197,77 @@ end
 local function StartKeyGui()
     print("[Areteon] Loading keyGui.lua")
 
-    local KeyGui, err = LoadRemote("keyGui.lua")
+    local KeyGui, Error =
+        LoadModule("keyGui.lua")
 
     if not KeyGui then
-        warn("[Areteon] " .. tostring(err))
+        warn(
+            "[Areteon] KeyGui error: " ..
+            tostring(Error)
+        )
+
         return
     end
 
     if type(KeyGui) ~= "table" then
-        warn("[Areteon] keyGui.lua returned " .. type(KeyGui))
+        warn(
+            "[Areteon] keyGui.lua returned " ..
+            tostring(type(KeyGui))
+        )
+
         return
     end
 
     if type(KeyGui.Create) ~= "function" then
-        warn("[Areteon] keyGui.Create() missing")
+        warn(
+            "[Areteon] KeyGui.Create() does not exist."
+        )
+
         return
     end
 
-    local ok, guiError = pcall(function()
-        KeyGui.Create({
-            LifetimeKey = CONFIG.LifetimeKey,
+    local success, result =
+        pcall(function()
 
-            OnVerify = function(input)
-                if input == CONFIG.LifetimeKey then
-                    return true, "Lifetime key accepted."
+            KeyGui.Create({
+
+                LifetimeKey =
+                    CONFIG.LifetimeKey,
+
+                OnVerify = function(input)
+
+                    if tostring(input) ==
+                        CONFIG.LifetimeKey then
+
+                        return true,
+                            "Lifetime key accepted."
+
+                    end
+
+                    return false,
+                        "Invalid lifetime key."
+                end,
+
+                OnSuccess = function()
+
+                    print(
+                        "[Areteon] Key accepted."
+                    )
+
+                    StartHub()
+
                 end
 
-                return false, "Invalid lifetime key."
-            end,
+            })
 
-            OnSuccess = function()
-                StartHub()
-            end
-        })
-    end)
+        end)
 
-    if not ok then
-        warn("[Areteon] Key GUI failed:")
-        warn(guiError)
+    if not success then
+        warn(
+            "[Areteon] Key GUI failed:"
+        )
+
+        warn(result)
     end
 end
 
@@ -211,27 +276,56 @@ end
 --==================================================
 
 print("==========================================")
-print("[Areteon] Starting")
+print("[Areteon] Starting...")
 print("[Areteon] UserId:", Player.UserId)
 print("[Areteon] Access:", Access.Type)
 print("==========================================")
 
+--==================================================
+-- ADMIN
+--==================================================
+
 if Access.IsAdmin then
-    print("[Areteon] Admin detected.")
+
+    print(
+        "[Areteon] Admin detected."
+    )
+
     StartHub()
+
     return
 end
+
+--==================================================
+-- EXCEPTION
+--==================================================
 
 if Access.IsException then
-    print("[Areteon] Exception detected.")
+
+    print(
+        "[Areteon] Exception detected."
+    )
+
     StartHub()
+
     return
 end
+
+--==================================================
+-- NORMAL USER
+--==================================================
 
 if Access.RequiresKey then
+
+    print(
+        "[Areteon] Key required."
+    )
+
     StartKeyGui()
+
     return
 end
 
-warn("[Areteon] No valid access state.")
-```
+warn(
+    "[Areteon] No valid access state."
+)
