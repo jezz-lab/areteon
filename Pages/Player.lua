@@ -4,37 +4,36 @@
 
 local Page = {}
 
-local Players =
-    game:GetService("Players")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-local UserInputService =
-    game:GetService("UserInputService")
-
-local RunService =
-    game:GetService("RunService")
-
-local LocalPlayer =
-    Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 
 local Connections = {}
+
+--==================================================
+-- DEFAULTS
+--==================================================
+
+local DEFAULT_WALK_SPEED = 16
+local DEFAULT_JUMP_POWER = 50
+local DEFAULT_FLY_SPEED = 50
+
+local MIN_WALK_SPEED = 0
+local MAX_WALK_SPEED = 200
 
 --==================================================
 -- HELPERS
 --==================================================
 
 local function Create(className, properties, parent)
+    local object = Instance.new(className)
 
-    local object =
-        Instance.new(className)
-
-    for property, value in
-        pairs(properties or {})
-    do
-
+    for property, value in pairs(properties or {}) do
         pcall(function()
             object[property] = value
         end)
-
     end
 
     object.Parent = parent
@@ -43,183 +42,535 @@ local function Create(className, properties, parent)
 end
 
 local function Corner(object, radius)
+    local corner = Instance.new("UICorner")
 
-    local corner =
-        Instance.new("UICorner")
-
-    corner.CornerRadius =
-        UDim.new(0, radius or 8)
-
+    corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = object
-
 end
 
-local function Section(parent, title, y)
+local function GetHumanoid()
+    local character = LocalPlayer.Character
 
-    local frame =
-        Create("Frame", {
+    if not character then
+        return nil
+    end
 
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    y
-                ),
+    return character:FindFirstChildOfClass("Humanoid")
+end
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    45
-                ),
+local function GetRoot()
+    local character = LocalPlayer.Character
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    23,
-                    23,
-                    29
-                ),
+    if not character then
+        return nil
+    end
 
-            BorderSizePixel = 0
+    return character:FindFirstChild("HumanoidRootPart")
+end
 
-        }, parent)
+--==================================================
+-- SECTION
+--==================================================
+
+local function Section(parent, title)
+    local frame = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 42),
+
+        BackgroundColor3 = Color3.fromRGB(
+            23,
+            23,
+            29
+        ),
+
+        BorderSizePixel = 0
+    }, parent)
 
     Corner(frame, 8)
 
     Create("TextLabel", {
-
         BackgroundTransparency = 1,
+
+        Position = UDim2.new(
+            0,
+            12,
+            0,
+            0
+        ),
+
+        Size = UDim2.new(
+            1,
+            -24,
+            1,
+            0
+        ),
+
+        Font = Enum.Font.GothamBold,
+
+        Text = title,
+
+        TextColor3 = Color3.fromRGB(
+            235,
+            235,
+            240
+        ),
+
+        TextSize = 14,
+
+        TextXAlignment =
+            Enum.TextXAlignment.Left
+    }, frame)
+
+    return frame
+end
+
+--==================================================
+-- CONTROL BOX
+--==================================================
+
+local function ControlBox(
+    parent,
+    title,
+    height
+)
+
+    local frame = Create("Frame", {
+        Size = UDim2.new(
+            0.5,
+            -5,
+            0,
+            height or 90
+        ),
+
+        BackgroundColor3 = Color3.fromRGB(
+            27,
+            27,
+            34
+        ),
+
+        BorderSizePixel = 0
+    }, parent)
+
+    Corner(frame, 7)
+
+    Create("TextLabel", {
+        BackgroundTransparency = 1,
+
+        Position = UDim2.new(
+            0,
+            10,
+            0,
+            8
+        ),
+
+        Size = UDim2.new(
+            1,
+            -20,
+            0,
+            22
+        ),
+
+        Font = Enum.Font.GothamBold,
+
+        Text = title,
+
+        TextColor3 = Color3.fromRGB(
+            235,
+            235,
+            240
+        ),
+
+        TextSize = 13,
+
+        TextXAlignment =
+            Enum.TextXAlignment.Left
+    }, frame)
+
+    return frame
+end
+
+--==================================================
+-- INPUT
+--==================================================
+
+local function Input(
+    parent,
+    text,
+    position,
+    size
+)
+
+    local box = Create("TextBox", {
+        Position = position,
+
+        Size = size,
+
+        BackgroundColor3 =
+            Color3.fromRGB(
+                35,
+                35,
+                43
+            ),
+
+        BorderSizePixel = 0,
+
+        Font = Enum.Font.Gotham,
+
+        Text = text,
+
+        TextColor3 =
+            Color3.fromRGB(
+                220,
+                220,
+                225
+            ),
+
+        PlaceholderColor3 =
+            Color3.fromRGB(
+                140,
+                140,
+                150
+            ),
+
+        TextSize = 12,
+
+        ClearTextOnFocus = false
+    }, parent)
+
+    Corner(box, 6)
+
+    return box
+end
+
+--==================================================
+-- CHECKBOX
+--==================================================
+
+local function Checkbox(
+    parent,
+    callback
+)
+
+    local button = Create("TextButton", {
+        AnchorPoint =
+            Vector2.new(
+                1,
+                0.5
+            ),
+
+        Position =
+            UDim2.new(
+                1,
+                -10,
+                0,
+                20
+            ),
+
+        Size =
+            UDim2.new(
+                0,
+                22,
+                0,
+                22
+            ),
+
+        BackgroundColor3 =
+            Color3.fromRGB(
+                38,
+                38,
+                47
+            ),
+
+        BorderSizePixel = 0,
+
+        Text = ""
+    }, parent)
+
+    Corner(button, 5)
+
+    local enabled = false
+
+    local function Update()
+        if enabled then
+            button.BackgroundColor3 =
+                Color3.fromRGB(
+                    80,
+                    140,
+                    255
+                )
+
+            button.Text = "✓"
+        else
+            button.BackgroundColor3 =
+                Color3.fromRGB(
+                    38,
+                    38,
+                    47
+                )
+
+            button.Text = ""
+        end
+    end
+
+    button.MouseButton1Click:Connect(function()
+        enabled = not enabled
+
+        Update()
+
+        if callback then
+            callback(enabled)
+        end
+    end)
+
+    Update()
+
+    return button
+end
+
+--==================================================
+-- SLIDER
+--==================================================
+
+local function Slider(
+    parent,
+    minimum,
+    maximum,
+    defaultValue,
+    callback
+)
+
+    local holder = Create("Frame", {
+        Position = UDim2.new(
+            0,
+            10,
+            0,
+            63
+        ),
+
+        Size = UDim2.new(
+            1,
+            -20,
+            0,
+            16
+        ),
+
+        BackgroundTransparency = 1
+    }, parent)
+
+    local bar = Create("Frame", {
+        AnchorPoint =
+            Vector2.new(
+                0,
+                0.5
+            ),
 
         Position =
             UDim2.new(
                 0,
-                12,
                 0,
+                0.5,
                 0
             ),
 
         Size =
             UDim2.new(
                 1,
-                -24,
+                0,
+                0,
+                5
+            ),
+
+        BackgroundColor3 =
+            Color3.fromRGB(
+                50,
+                50,
+                60
+            ),
+
+        BorderSizePixel = 0
+    }, holder)
+
+    Corner(bar, 5)
+
+    local fill = Create("Frame", {
+        Size =
+            UDim2.new(
+                0,
+                0,
                 1,
                 0
             ),
 
-        Font =
-            Enum.Font.GothamBold,
-
-        Text = title,
-
-        TextColor3 =
+        BackgroundColor3 =
             Color3.fromRGB(
-                235,
-                235,
-                240
+                80,
+                140,
+                255
             ),
 
-        TextSize = 14,
+        BorderSizePixel = 0
+    }, bar)
 
-        TextXAlignment =
-            Enum.TextXAlignment.Left
+    Corner(fill, 5)
 
-    }, frame)
+    local knob = Create("TextButton", {
+        AnchorPoint =
+            Vector2.new(
+                0.5,
+                0.5
+            ),
 
-    return frame
+        Position =
+            UDim2.new(
+                0,
+                0,
+                0.5,
+                0
+            ),
+
+        Size =
+            UDim2.new(
+                0,
+                14,
+                0,
+                14
+            ),
+
+        BackgroundColor3 =
+            Color3.fromRGB(
+                255,
+                255,
+                255
+            ),
+
+        BorderSizePixel = 0,
+
+        Text = "",
+        AutoButtonColor = false
+    }, bar)
+
+    Corner(knob, 10)
+
+    local dragging = false
+    local value = defaultValue
+
+    local function SetValue(inputX)
+        local startX = bar.AbsolutePosition.X
+        local width = bar.AbsoluteSize.X
+
+        local percent =
+            math.clamp(
+                (inputX - startX) / width,
+                0,
+                1
+            )
+
+        value =
+            minimum +
+            ((maximum - minimum) * percent)
+
+        value =
+            math.floor(
+                value + 0.5
+            )
+
+        local normalized =
+            (value - minimum) /
+            (maximum - minimum)
+
+        fill.Size =
+            UDim2.new(
+                normalized,
+                0,
+                1,
+                0
+            )
+
+        knob.Position =
+            UDim2.new(
+                normalized,
+                0,
+                0.5,
+                0
+            )
+
+        if callback then
+            callback(value)
+        end
+    end
+
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType ==
+            Enum.UserInputType.MouseButton1
+        then
+            dragging = true
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType ==
+            Enum.UserInputType.MouseButton1
+        then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if not dragging then
+            return
+        end
+
+        if input.UserInputType ==
+            Enum.UserInputType.MouseMovement
+        then
+            SetValue(input.Position.X)
+        end
+    end)
+
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType ==
+            Enum.UserInputType.MouseButton1
+        then
+            SetValue(input.Position.X)
+        end
+    end)
+
+    task.defer(function()
+        local normalized =
+            (defaultValue - minimum) /
+            (maximum - minimum)
+
+        fill.Size =
+            UDim2.new(
+                normalized,
+                0,
+                1,
+                0
+            )
+
+        knob.Position =
+            UDim2.new(
+                normalized,
+                0,
+                0.5,
+                0
+            )
+    end)
+
+    return holder
 end
 
-local function Toggle(
-    parent,
-    title,
-    y,
-    callback
-)
+--==================================================
+-- CLEANUP
+--==================================================
 
-    local button =
-        Create("TextButton", {
+local function DisconnectAll()
+    for _, connection in ipairs(Connections) do
+        pcall(function()
+            connection:Disconnect()
+        end)
+    end
 
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    y
-                ),
-
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    38
-                ),
-
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    27,
-                    27,
-                    34
-                ),
-
-            BorderSizePixel = 0,
-
-            Font =
-                Enum.Font.Gotham,
-
-            Text = title,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    210,
-                    210,
-                    218
-                ),
-
-            TextSize = 13,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left,
-
-            AutoButtonColor = true
-
-        }, parent)
-
-    Corner(button, 7)
-
-    Create("UIPadding", {
-        PaddingLeft =
-            UDim.new(0, 12)
-    }, button)
-
-    local enabled = false
-
-    button.MouseButton1Click:Connect(
-        function()
-
-            enabled = not enabled
-
-            if enabled then
-
-                button.Text =
-                    title .. "  [ON]"
-
-            else
-
-                button.Text =
-                    title .. "  [OFF]"
-
-            end
-
-            if callback then
-                callback(enabled)
-            end
-
-        end
-    )
-
-    return button
+    table.clear(Connections)
 end
 
 --==================================================
@@ -228,61 +579,114 @@ end
 
 function Page.Start(state)
 
-    local PageFrame =
-        Create("Frame", {
+    DisconnectAll()
 
-            Name = "Player",
+    local PageFrame = Create("Frame", {
+        Name = "Player",
 
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    1,
-                    0
-                ),
+        Size = UDim2.new(
+            1,
+            0,
+            1,
+            0
+        ),
 
-            Position =
-                UDim2.new(
-                    0,
-                    0,
-                    0,
-                    0
-                ),
+        Position = UDim2.new(
+            0,
+            0,
+            0,
+            0
+        ),
 
-            BackgroundTransparency = 1,
+        BackgroundTransparency = 1,
 
-            BorderSizePixel = 0,
+        BorderSizePixel = 0,
 
-            ClipsDescendants = true
+        ClipsDescendants = true
+    }, state.Content)
 
-        }, state.Content)
+    --==================================================
+    -- SCROLLING AREA
+    --==================================================
+
+    local Scroll = Create("ScrollingFrame", {
+        Name = "PlayerScroll",
+
+        Position = UDim2.new(
+            0,
+            10,
+            0,
+            10
+        ),
+
+        Size = UDim2.new(
+            1,
+            -20,
+            1,
+            -20
+        ),
+
+        BackgroundTransparency = 1,
+
+        BorderSizePixel = 0,
+
+        CanvasSize = UDim2.new(
+            0,
+            0,
+            0,
+            0
+        ),
+
+        AutomaticCanvasSize =
+            Enum.AutomaticSize.Y,
+
+        ScrollBarThickness = 5,
+
+        ScrollBarImageTransparency = 0.15,
+
+        ScrollingDirection =
+            Enum.ScrollingDirection.Y
+    }, PageFrame)
+
+    local Layout = Create("UIListLayout", {
+        Padding = UDim.new(
+            0,
+            10
+        ),
+
+        SortOrder =
+            Enum.SortOrder.LayoutOrder
+    }, Scroll)
+
+    Create("UIPadding", {
+        PaddingTop = UDim.new(
+            0,
+            5
+        ),
+
+        PaddingBottom = UDim.new(
+            0,
+            15
+        )
+    }, Scroll)
 
     --==================================================
     -- TITLE
     --==================================================
 
     Create("TextLabel", {
+        LayoutOrder = 1,
+
+        Size = UDim2.new(
+            1,
+            -10,
+            0,
+            40
+        ),
 
         BackgroundTransparency = 1,
 
-        Position =
-            UDim2.new(
-                0,
-                15,
-                0,
-                15
-            ),
-
-        Size =
-            UDim2.new(
-                1,
-                -30,
-                0,
-                35
-            ),
-
-        Font =
-            Enum.Font.GothamBold,
+        Font = Enum.Font.GothamBold,
 
         Text = "Player",
 
@@ -297,103 +701,134 @@ function Page.Start(state)
 
         TextXAlignment =
             Enum.TextXAlignment.Left
-
-    }, PageFrame)
+    }, Scroll)
 
     --==================================================
-    -- MOVEMENT
+    -- MOVEMENT SECTION
     --==================================================
 
-    Section(
-        PageFrame,
-        "Movement",
-        65
-    )
+    local Movement =
+        Section(
+            Scroll,
+            "Movement"
+        )
+
+    Movement.LayoutOrder = 2
+
+    --==================================================
+    -- MOVEMENT GRID
+    --==================================================
+
+    local MovementGrid = Create("Frame", {
+        LayoutOrder = 3,
+
+        Size = UDim2.new(
+            1,
+            -10,
+            0,
+            205
+        ),
+
+        BackgroundTransparency = 1
+    }, Scroll)
+
+    local Grid = Create("UIGridLayout", {
+        CellSize = UDim2.new(
+            0.5,
+            -5,
+            0,
+            95
+        ),
+
+        CellPadding = UDim2.new(
+            0,
+            10,
+            0,
+            10
+        ),
+
+        SortOrder =
+            Enum.SortOrder.LayoutOrder
+    }, MovementGrid)
 
     --==================================================
     -- WALK SPEED
     --==================================================
 
+    local SpeedPanel =
+        ControlBox(
+            MovementGrid,
+            "WalkSpeed",
+            95
+        )
+
+    SpeedPanel.LayoutOrder = 1
+
     local SpeedBox =
-        Create("TextBox", {
+        Input(
+            SpeedPanel,
+            tostring(
+                DEFAULT_WALK_SPEED
+            ),
+            UDim2.new(
+                0,
+                10,
+                0,
+                32
+            ),
+            UDim2.new(
+                1,
+                -20,
+                0,
+                27
+            )
+        )
 
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    120
-                ),
+    local function SetWalkSpeed(value)
+        local humanoid = GetHumanoid()
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    38
-                ),
+        if humanoid then
+            humanoid.WalkSpeed = value
+        end
+    end
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    27,
-                    27,
-                    34
-                ),
+    SpeedBox.FocusLost:Connect(function()
+        local value =
+            tonumber(
+                SpeedBox.Text
+            )
 
-            BorderSizePixel = 0,
-
-            Font =
-                Enum.Font.Gotham,
-
-            PlaceholderText =
-                "WalkSpeed",
-
-            Text = "16",
-
-            TextColor3 =
-                Color3.fromRGB(
-                    220,
-                    220,
-                    225
-                ),
-
-            TextSize = 13,
-
-            ClearTextOnFocus = false
-
-        }, PageFrame)
-
-    Corner(SpeedBox, 7)
-
-    SpeedBox.FocusLost:Connect(
-        function()
-
-            local value =
-                tonumber(
-                    SpeedBox.Text
+        if not value then
+            SpeedBox.Text =
+                tostring(
+                    DEFAULT_WALK_SPEED
                 )
+            return
+        end
 
-            if not value then
-                return
-            end
+        value =
+            math.clamp(
+                value,
+                MIN_WALK_SPEED,
+                MAX_WALK_SPEED
+            )
 
-            local character =
-                LocalPlayer.Character
+        SpeedBox.Text =
+            tostring(value)
 
-            if not character then
-                return
-            end
+        SetWalkSpeed(value)
+    end)
 
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+    Slider(
+        SpeedPanel,
+        MIN_WALK_SPEED,
+        MAX_WALK_SPEED,
+        DEFAULT_WALK_SPEED,
+        function(value)
+            SpeedBox.Text =
+                tostring(value)
 
-            if humanoid then
-                humanoid.WalkSpeed =
-                    value
-            end
-
+            SetWalkSpeed(value)
         end
     )
 
@@ -401,119 +836,179 @@ function Page.Start(state)
     -- JUMP POWER
     --==================================================
 
+    local JumpPanel =
+        ControlBox(
+            MovementGrid,
+            "JumpPower",
+            95
+        )
+
+    JumpPanel.LayoutOrder = 2
+
     local JumpBox =
-        Create("TextBox", {
+        Input(
+            JumpPanel,
+            tostring(
+                DEFAULT_JUMP_POWER
+            ),
+            UDim2.new(
+                0,
+                10,
+                0,
+                38
+            ),
+            UDim2.new(
+                1,
+                -20,
+                0,
+                32
+            )
+        )
 
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    165
-                ),
+    JumpBox.FocusLost:Connect(function()
+        local value =
+            tonumber(
+                JumpBox.Text
+            )
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    38
-                ),
-
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    27,
-                    27,
-                    34
-                ),
-
-            BorderSizePixel = 0,
-
-            Font =
-                Enum.Font.Gotham,
-
-            PlaceholderText =
-                "JumpPower",
-
-            Text = "50",
-
-            TextColor3 =
-                Color3.fromRGB(
-                    220,
-                    220,
-                    225
-                ),
-
-            TextSize = 13,
-
-            ClearTextOnFocus = false
-
-        }, PageFrame)
-
-    Corner(JumpBox, 7)
-
-    JumpBox.FocusLost:Connect(
-        function()
-
-            local value =
-                tonumber(
-                    JumpBox.Text
+        if not value then
+            JumpBox.Text =
+                tostring(
+                    DEFAULT_JUMP_POWER
                 )
-
-            if not value then
-                return
-            end
-
-            local character =
-                LocalPlayer.Character
-
-            if not character then
-                return
-            end
-
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
-
-            if humanoid then
-                humanoid.JumpPower =
-                    value
-            end
-
+            return
         end
-    )
+
+        local humanoid =
+            GetHumanoid()
+
+        if humanoid then
+            humanoid.JumpPower = value
+        end
+    end)
 
     --==================================================
     -- FLY
     --==================================================
 
-    Toggle(
-        PageFrame,
-        "Fly",
-        210,
+    local FlyPanel =
+        ControlBox(
+            MovementGrid,
+            "Fly",
+            95
+        )
+
+    FlyPanel.LayoutOrder = 3
+
+    Checkbox(
+        FlyPanel,
         function(enabled)
 
-            -- Toggle state is provided here.
-            -- Add your own flight implementation
-            -- if required by your game.
-
-            print(
-                "[Areteon] Fly:",
-                enabled
-            )
+            if enabled then
+                print(
+                    "[Areteon] Fly enabled"
+                )
+            else
+                print(
+                    "[Areteon] Fly disabled"
+                )
+            end
 
         end
     )
+
+    Create("TextLabel", {
+        BackgroundTransparency = 1,
+
+        Position = UDim2.new(
+            0,
+            10,
+            0,
+            38
+        ),
+
+        Size = UDim2.new(
+            0,
+            55,
+            0,
+            25
+        ),
+
+        Font = Enum.Font.Gotham,
+
+        Text = "Speed",
+
+        TextColor3 =
+            Color3.fromRGB(
+                170,
+                170,
+                180
+            ),
+
+        TextSize = 11,
+
+        TextXAlignment =
+            Enum.TextXAlignment.Left
+    }, FlyPanel)
+
+    local FlySpeedBox =
+        Input(
+            FlyPanel,
+            tostring(
+                DEFAULT_FLY_SPEED
+            ),
+            UDim2.new(
+                0,
+                62,
+                0,
+                34
+            ),
+            UDim2.new(
+                1,
+                -72,
+                0,
+                30
+            )
+        )
+
+    FlySpeedBox.FocusLost:Connect(function()
+        local value =
+            tonumber(
+                FlySpeedBox.Text
+            )
+
+        if not value then
+            FlySpeedBox.Text =
+                tostring(
+                    DEFAULT_FLY_SPEED
+                )
+            return
+        end
+
+        FlySpeedBox.Text =
+            tostring(
+                math.max(
+                    0,
+                    value
+                )
+            )
+    end)
 
     --==================================================
     -- NOCLIP
     --==================================================
 
-    Toggle(
-        PageFrame,
-        "Noclip",
-        255,
+    local NoclipPanel =
+        ControlBox(
+            MovementGrid,
+            "Noclip",
+            95
+        )
+
+    NoclipPanel.LayoutOrder = 4
+
+    Checkbox(
+        NoclipPanel,
         function(enabled)
 
             if enabled then
@@ -541,11 +1036,9 @@ function Page.Start(state)
 
                                     object.CanCollide =
                                         false
-
                                 end
 
                             end
-
                         end
                     )
 
@@ -555,7 +1048,6 @@ function Page.Start(state)
                 )
 
             end
-
         end
     )
 
@@ -563,16 +1055,58 @@ function Page.Start(state)
     -- EXTRAS
     --==================================================
 
-    Section(
-        PageFrame,
-        "Extras",
-        310
-    )
+    local Extras =
+        Section(
+            Scroll,
+            "Extras"
+        )
 
-    Toggle(
-        PageFrame,
-        "Infinite Jump",
-        365,
+    Extras.LayoutOrder = 4
+
+    local ExtrasGrid = Create("Frame", {
+        LayoutOrder = 5,
+
+        Size = UDim2.new(
+            1,
+            -10,
+            0,
+            95
+        ),
+
+        BackgroundTransparency = 1
+    }, Scroll)
+
+    Create("UIGridLayout", {
+        CellSize = UDim2.new(
+            0.5,
+            -5,
+            0,
+            95
+        ),
+
+        CellPadding = UDim2.new(
+            0,
+            10,
+            0,
+            0
+        )
+    }, ExtrasGrid)
+
+    --==================================================
+    -- INFINITE JUMP
+    --==================================================
+
+    local InfinitePanel =
+        ControlBox(
+            ExtrasGrid,
+            "Infinite Jump",
+            95
+        )
+
+    InfinitePanel.LayoutOrder = 1
+
+    Checkbox(
+        InfinitePanel,
         function(enabled)
 
             if enabled then
@@ -581,17 +1115,8 @@ function Page.Start(state)
                     UserInputService.JumpRequest:Connect(
                         function()
 
-                            local character =
-                                LocalPlayer.Character
-
-                            if not character then
-                                return
-                            end
-
                             local humanoid =
-                                character:FindFirstChildOfClass(
-                                    "Humanoid"
-                                )
+                                GetHumanoid()
 
                             if humanoid then
                                 humanoid:ChangeState(
@@ -613,61 +1138,168 @@ function Page.Start(state)
     )
 
     --==================================================
-    -- PLAYER
+    -- CLICK TELEPORT
     --==================================================
 
-    Section(
-        PageFrame,
-        "Player",
-        420
+    local TeleportPanel =
+        ControlBox(
+            ExtrasGrid,
+            "Click Teleport",
+            95
+        )
+
+    TeleportPanel.LayoutOrder = 2
+
+    Checkbox(
+        TeleportPanel,
+        function(enabled)
+
+            if enabled then
+                print(
+                    "[Areteon] Click Teleport enabled"
+                )
+            else
+                print(
+                    "[Areteon] Click Teleport disabled"
+                )
+            end
+
+        end
     )
 
-    local Teleport =
-        Create("TextButton", {
+    --==================================================
+    -- PLAYER SECTION
+    --==================================================
 
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    475
-                ),
+    local PlayerSection =
+        Section(
+            Scroll,
+            "Player"
+        )
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    38
-                ),
+    PlayerSection.LayoutOrder = 6
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    27,
-                    27,
-                    34
-                ),
+    --==================================================
+    -- RESET / RESPAWN
+    --==================================================
 
-            BorderSizePixel = 0,
+    local PlayerGrid = Create("Frame", {
+        LayoutOrder = 7,
 
-            Font =
-                Enum.Font.Gotham,
+        Size = UDim2.new(
+            1,
+            -10,
+            0,
+            50
+        ),
 
-            Text =
-                "Click Teleport",
+        BackgroundTransparency = 1
+    }, Scroll)
 
-            TextColor3 =
-                Color3.fromRGB(
-                    220,
-                    220,
-                    225
-                ),
+    Create("UIGridLayout", {
+        CellSize = UDim2.new(
+            0.5,
+            -5,
+            0,
+            45
+        ),
 
-            TextSize = 13
+        CellPadding = UDim2.new(
+            0,
+            10,
+            0,
+            0
+        )
+    }, PlayerGrid)
 
-        }, PageFrame)
+    local ResetButton =
+        Create(
+            "TextButton",
+            {
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        27,
+                        27,
+                        34
+                    ),
 
-    Corner(Teleport, 7)
+                BorderSizePixel = 0,
+
+                Font = Enum.Font.Gotham,
+
+                Text = "Reset Character",
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        220,
+                        220,
+                        225
+                    ),
+
+                TextSize = 12
+            },
+            PlayerGrid
+        )
+
+    Corner(
+        ResetButton,
+        7
+    )
+
+    ResetButton.MouseButton1Click:Connect(
+        function()
+
+            local humanoid =
+                GetHumanoid()
+
+            if humanoid then
+                humanoid.Health = 0
+            end
+
+        end
+    )
+
+    local RespawnButton =
+        Create(
+            "TextButton",
+            {
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        27,
+                        27,
+                        34
+                    ),
+
+                BorderSizePixel = 0,
+
+                Font = Enum.Font.Gotham,
+
+                Text = "Respawn",
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        220,
+                        220,
+                        225
+                    ),
+
+                TextSize = 12
+            },
+            PlayerGrid
+        )
+
+    Corner(
+        RespawnButton,
+        7
+    )
+
+    RespawnButton.MouseButton1Click:Connect(
+        function()
+
+            LocalPlayer:LoadCharacter()
+
+        end
+    )
 
     --==================================================
     -- RETURN
