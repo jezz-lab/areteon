@@ -2,35 +2,23 @@
 -- ARETEON | Pages/Settings.lua
 --==================================================
 
-local Page = {}
+local Settings = {}
 
-local Players =
-    game:GetService("Players")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
 
 --==================================================
--- CREATE
+-- HELPERS
 --==================================================
 
-local function Create(
-    className,
-    properties,
-    parent
-)
+local function Create(className, properties, parent)
+    local object = Instance.new(className)
 
-    local object =
-        Instance.new(className)
-
-    for property, value in
-        pairs(properties or {})
-    do
-
+    for property, value in pairs(properties or {}) do
         pcall(function()
-
-            object[property] =
-                value
-
+            object[property] = value
         end)
-
     end
 
     object.Parent = parent
@@ -38,404 +26,47 @@ local function Create(
     return object
 end
 
---==================================================
--- CORNER
---==================================================
-
-local function Corner(
-    object,
-    radius
-)
-
-    local corner =
-        Instance.new("UICorner")
-
-    corner.CornerRadius =
-        UDim.new(
-            0,
-            radius or 8
-        )
-
+local function Corner(object, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = object
 end
 
---==================================================
--- ACCESS FROM STATE
---==================================================
-
-local function GetAccessType(
-    player,
-    state
-)
-
-    if
-        state.Admins
-        and
-        state.Admins[player.UserId] == true
-    then
-
-        return "ADMIN"
-
+local function Clear(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        child:Destroy()
     end
-
-    if
-        state.Exceptions
-        and
-        state.Exceptions[player.UserId] == true
-    then
-
-        return "EXCEPTION"
-
-    end
-
-    return "USER"
-end
-
---==================================================
--- PLAYER ROW
---==================================================
-
-local function CreatePlayerRow(
-    parent,
-    player,
-    state
-)
-
-    local row =
-        Create(
-            "Frame",
-            {
-                Name =
-                    "Player_" ..
-                    tostring(
-                        player.UserId
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -10,
-                        0,
-                        68
-                    ),
-
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        27,
-                        27,
-                        34
-                    ),
-
-                BorderSizePixel = 0
-            },
-            parent
-        )
-
-    Corner(row, 8)
-
-    --==================================================
-    -- NAME
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    12,
-                    0,
-                    8
-                ),
-
-            Size =
-                UDim2.new(
-                    0,
-                    180,
-                    0,
-                    22
-                ),
-
-            Font =
-                Enum.Font.GothamBold,
-
-            Text =
-                player.DisplayName,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    235,
-                    235,
-                    240
-                ),
-
-            TextSize = 14,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        row
-    )
-
-    --==================================================
-    -- USERNAME
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    12,
-                    0,
-                    32
-                ),
-
-            Size =
-                UDim2.new(
-                    0,
-                    180,
-                    0,
-                    18
-                ),
-
-            Font =
-                Enum.Font.Gotham,
-
-            Text =
-                "@" ..
-                player.Name,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    145,
-                    145,
-                    155
-                ),
-
-            TextSize = 11,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        row
-    )
-
-    --==================================================
-    -- ACCESS
-    --==================================================
-
-    local access =
-        GetAccessType(
-            player,
-            state
-        )
-
-    local status =
-        "UNKNOWN"
-
-    local keyStatus =
-        "UNKNOWN"
-
-    local remaining =
-        "UNKNOWN"
-
-    if access == "ADMIN" then
-
-        status =
-            "ADMIN"
-
-        keyStatus =
-            "KEYLESS"
-
-        remaining =
-            "—"
-
-    elseif access == "EXCEPTION" then
-
-        status =
-            "EXCEPTION"
-
-        keyStatus =
-            "KEYLESS"
-
-        remaining =
-            "—"
-
-    end
-
-    --==================================================
-    -- STATUS
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    195,
-                    0,
-                    10
-                ),
-
-            Size =
-                UDim2.new(
-                    0,
-                    90,
-                    0,
-                    20
-                ),
-
-            Font =
-                Enum.Font.GothamMedium,
-
-            Text = status,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    210,
-                    210,
-                    218
-                ),
-
-            TextSize = 10,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Center
-        },
-        row
-    )
-
-    --==================================================
-    -- KEY
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    290,
-                    0,
-                    10
-                ),
-
-            Size =
-                UDim2.new(
-                    0,
-                    90,
-                    0,
-                    20
-                ),
-
-            Font =
-                Enum.Font.GothamMedium,
-
-            Text = keyStatus,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    170,
-                    170,
-                    180
-                ),
-
-            TextSize = 10,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Center
-        },
-        row
-    )
-
-    --==================================================
-    -- TIME
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    385,
-                    0,
-                    10
-                ),
-
-            Size =
-                UDim2.new(
-                    1,
-                    -400,
-                    0,
-                    20
-                ),
-
-            Font =
-                Enum.Font.Gotham,
-
-            Text =
-                "Time: " ..
-                remaining,
-
-            TextColor3 =
-                Color3.fromRGB(
-                    150,
-                    150,
-                    160
-                ),
-
-            TextSize = 10,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Right
-        },
-        row
-    )
-
-    return row
 end
 
 --==================================================
 -- START
 --==================================================
 
-function Page.Start(state)
+function Settings.Start(state)
 
-    local PageFrame =
+    if not state or not state.Content then
+        warn("[Areteon] Settings: Content was not provided.")
+        return nil
+    end
+
+    local Content = state.Content
+
+    local Page =
         Create(
             "Frame",
             {
-                Name = "Settings",
+                Name = "SettingsPage",
 
                 Size =
-                    UDim2.new(
-                        1,
-                        0,
-                        0,
-                        state.IsAdmin
-                            and 700
-                            or 250
-                    ),
+                    UDim2.new(1, -20, 0, 650),
 
                 BackgroundTransparency = 1,
 
-                BorderSizePixel = 0
+                BorderSizePixel = 0,
+
+                Visible = false
             },
-            state.Content
+            Content
         )
 
     --==================================================
@@ -445,23 +76,15 @@ function Page.Start(state)
     Create(
         "TextLabel",
         {
-            BackgroundTransparency = 1,
+            Name = "Title",
 
             Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    15
-                ),
+                UDim2.new(0, 15, 0, 15),
 
             Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    35
-                ),
+                UDim2.new(1, -30, 0, 35),
+
+            BackgroundTransparency = 1,
 
             Font =
                 Enum.Font.GothamBold,
@@ -480,409 +103,35 @@ function Page.Start(state)
             TextXAlignment =
                 Enum.TextXAlignment.Left
         },
-        PageFrame
+        Page
     )
-
-    --==================================================
-    -- ADMIN PANEL
-    --==================================================
-
-    local adminPanel =
-        Create(
-            "Frame",
-            {
-                Name = "AdminPanel",
-
-                Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        65
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        400
-                    ),
-
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        23,
-                        23,
-                        29
-                    ),
-
-                BorderSizePixel = 0,
-
-                Visible =
-                    state.IsAdmin == true
-            },
-            PageFrame
-        )
-
-    Corner(adminPanel, 10)
-
-    --==================================================
-    -- ADMIN TITLE
-    --==================================================
-
-    Create(
-        "TextLabel",
-        {
-            BackgroundTransparency = 1,
-
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    12
-                ),
-
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    25
-                ),
-
-            Font =
-                Enum.Font.GothamBold,
-
-            Text = "Admin Panel",
-
-            TextColor3 =
-                Color3.fromRGB(
-                    240,
-                    240,
-                    245
-                ),
-
-            TextSize = 15,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        adminPanel
-    )
-
-    --==================================================
-    -- PLAYER COUNT
-    --==================================================
-
-    local playerCount =
-        Create(
-            "TextLabel",
-            {
-                BackgroundTransparency = 1,
-
-                Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        38
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        20
-                    ),
-
-                Font =
-                    Enum.Font.Gotham,
-
-                Text =
-                    "Online Players: 0",
-
-                TextColor3 =
-                    Color3.fromRGB(
-                        150,
-                        150,
-                        160
-                    ),
-
-                TextSize = 12,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            adminPanel
-        )
-
-    --==================================================
-    -- HEADERS
-    --==================================================
-
-    local headers = {
-
-        {
-            Text = "PLAYER",
-            X = 12,
-            Width = 180
-        },
-
-        {
-            Text = "STATUS",
-            X = 195,
-            Width = 90
-        },
-
-        {
-            Text = "KEY",
-            X = 290,
-            Width = 90
-        },
-
-        {
-            Text = "TIME REMAINING",
-            X = 385,
-            Width = 200
-        }
-
-    }
-
-    for _, header in
-        ipairs(headers)
-    do
-
-        Create(
-            "TextLabel",
-            {
-                BackgroundTransparency = 1,
-
-                Position =
-                    UDim2.new(
-                        0,
-                        header.X,
-                        0,
-                        66
-                    ),
-
-                Size =
-                    UDim2.new(
-                        0,
-                        header.Width,
-                        0,
-                        20
-                    ),
-
-                Font =
-                    Enum.Font.GothamBold,
-
-                Text =
-                    header.Text,
-
-                TextColor3 =
-                    Color3.fromRGB(
-                        125,
-                        125,
-                        135
-                    ),
-
-                TextSize = 10,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            adminPanel
-        )
-
-    end
-
-    --==================================================
-    -- PLAYER LIST
-    --==================================================
-
-    local playerList =
-        Create(
-            "ScrollingFrame",
-            {
-                Name = "PlayerList",
-
-                Position =
-                    UDim2.new(
-                        0,
-                        10,
-                        0,
-                        92
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -20,
-                        1,
-                        -102
-                    ),
-
-                BackgroundTransparency = 1,
-
-                BorderSizePixel = 0,
-
-                CanvasSize =
-                    UDim2.new(
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
-
-                AutomaticCanvasSize =
-                    Enum.AutomaticSize.Y,
-
-                ScrollBarThickness = 5,
-
-                ScrollingDirection =
-                    Enum.ScrollingDirection.Y
-            },
-            adminPanel
-        )
-
-    Create(
-        "UIListLayout",
-        {
-            Padding =
-                UDim.new(0, 6),
-
-            SortOrder =
-                Enum.SortOrder.LayoutOrder
-        },
-        playerList
-    )
-
-    --==================================================
-    -- REFRESH
-    --==================================================
-
-    local function RefreshPlayers()
-
-        for _, child in
-            ipairs(
-                playerList:GetChildren()
-            )
-        do
-
-            if child:IsA("GuiObject") then
-                child:Destroy()
-            end
-
-        end
-
-        local online =
-            Players:GetPlayers()
-
-        playerCount.Text =
-            "Online Players: " ..
-            tostring(#online)
-
-        if not state.IsAdmin then
-            return
-        end
-
-        for _, player in
-            ipairs(online)
-        do
-
-            CreatePlayerRow(
-                playerList,
-                player,
-                state
-            )
-
-        end
-    end
-
-    RefreshPlayers()
-
-    --==================================================
-    -- JOIN
-    --==================================================
-
-    local added =
-        Players.PlayerAdded:Connect(
-            function()
-
-                if not state.Destroyed then
-
-                    task.wait()
-
-                    RefreshPlayers()
-
-                end
-
-            end
-        )
-
-    --==================================================
-    -- LEAVE
-    --==================================================
-
-    local removing =
-        Players.PlayerRemoving:Connect(
-            function()
-
-                if not state.Destroyed then
-
-                    task.defer(
-                        RefreshPlayers
-                    )
-
-                end
-
-            end
-        )
 
     --==================================================
     -- GENERAL
     --==================================================
 
-    local generalY =
-        state.IsAdmin
-            and 480
-            or 65
-
     local General =
         Create(
             "Frame",
             {
-                Name =
-                    "GeneralSettings",
+                Name = "General",
 
                 Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        generalY
-                    ),
+                    UDim2.new(0, 15, 0, 65),
 
                 Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        140
-                    ),
+                    UDim2.new(1, -30, 0, 190),
 
                 BackgroundColor3 =
                     Color3.fromRGB(
-                        23,
-                        23,
-                        29
+                        22,
+                        22,
+                        28
                     ),
 
                 BorderSizePixel = 0
             },
-            PageFrame
+            Page
         )
 
     Corner(General, 10)
@@ -890,38 +139,27 @@ function Page.Start(state)
     Create(
         "TextLabel",
         {
-            BackgroundTransparency = 1,
-
             Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    12
-                ),
+                UDim2.new(0, 15, 0, 12),
 
             Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    25
-                ),
+                UDim2.new(1, -30, 0, 25),
+
+            BackgroundTransparency = 1,
 
             Font =
                 Enum.Font.GothamBold,
 
-            Text =
-                "General Settings",
+            Text = "General Settings",
 
             TextColor3 =
                 Color3.fromRGB(
-                    240,
-                    240,
-                    245
+                    255,
+                    255,
+                    255
                 ),
 
-            TextSize = 14,
+            TextSize = 15,
 
             TextXAlignment =
                 Enum.TextXAlignment.Left
@@ -930,51 +168,38 @@ function Page.Start(state)
     )
 
     --==================================================
-    -- NOTIFICATIONS
+    -- HUB TOGGLE
     --==================================================
 
-    local notifications = false
-
-    local NotificationButton =
+    local HubToggle =
         Create(
             "TextButton",
             {
                 Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        50
-                    ),
+                    UDim2.new(0, 15, 0, 52),
 
                 Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        35
-                    ),
+                    UDim2.new(1, -30, 0, 40),
 
                 BackgroundColor3 =
                     Color3.fromRGB(
-                        30,
-                        30,
-                        38
+                        35,
+                        35,
+                        43
                     ),
 
                 BorderSizePixel = 0,
 
                 Font =
-                    Enum.Font.Gotham,
+                    Enum.Font.GothamMedium,
 
-                Text =
-                    "Notifications [OFF]",
+                Text = "Hub: Enabled",
 
                 TextColor3 =
                     Color3.fromRGB(
-                        210,
-                        210,
-                        218
+                        225,
+                        225,
+                        230
                     ),
 
                 TextSize = 13,
@@ -985,77 +210,63 @@ function Page.Start(state)
             General
         )
 
-    Corner(NotificationButton, 7)
+    Corner(HubToggle, 7)
 
     Create(
         "UIPadding",
         {
-            PaddingLeft =
-                UDim.new(0, 12)
+            PaddingLeft = UDim.new(0, 12)
         },
-        NotificationButton
+        HubToggle
     )
 
-    NotificationButton.MouseButton1Click:Connect(
-        function()
+    local hubEnabled = true
 
-            notifications =
-                not notifications
+    HubToggle.MouseButton1Click:Connect(function()
 
-            NotificationButton.Text =
-                notifications
-                    and "Notifications [ON]"
-                    or "Notifications [OFF]"
+        hubEnabled = not hubEnabled
 
+        if hubEnabled then
+            HubToggle.Text = "Hub: Enabled"
+        else
+            HubToggle.Text = "Hub: Disabled"
         end
-    )
+
+    end)
 
     --==================================================
-    -- FLOATING ICON
+    -- RESET SCROLL
     --==================================================
 
-    local floatingIcon = true
-
-    local IconButton =
+    local ResetScroll =
         Create(
             "TextButton",
             {
                 Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        92
-                    ),
+                    UDim2.new(0, 15, 0, 102),
 
                 Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        35
-                    ),
+                    UDim2.new(1, -30, 0, 40),
 
                 BackgroundColor3 =
                     Color3.fromRGB(
-                        30,
-                        30,
-                        38
+                        35,
+                        35,
+                        43
                     ),
 
                 BorderSizePixel = 0,
 
                 Font =
-                    Enum.Font.Gotham,
+                    Enum.Font.GothamMedium,
 
-                Text =
-                    "Floating Icon [ON]",
+                Text = "Reset Scroll Position",
 
                 TextColor3 =
                     Color3.fromRGB(
-                        210,
-                        210,
-                        218
+                        225,
+                        225,
+                        230
                     ),
 
                 TextSize = 13,
@@ -1066,67 +277,361 @@ function Page.Start(state)
             General
         )
 
-    Corner(IconButton, 7)
+    Corner(ResetScroll, 7)
 
     Create(
         "UIPadding",
         {
-            PaddingLeft =
-                UDim.new(0, 12)
+            PaddingLeft = UDim.new(0, 12)
         },
-        IconButton
+        ResetScroll
     )
 
-    IconButton.MouseButton1Click:Connect(
-        function()
+    ResetScroll.MouseButton1Click:Connect(function()
 
-            floatingIcon =
-                not floatingIcon
+        if state.ContentScroll then
 
-            if state.Icon then
-
-                state.Icon.Visible =
-                    floatingIcon
-
-            end
-
-            IconButton.Text =
-                floatingIcon
-                    and "Floating Icon [ON]"
-                    or "Floating Icon [OFF]"
+            state.ContentScroll.CanvasPosition =
+                Vector2.new(0, 0)
 
         end
+
+    end)
+
+    --==================================================
+    -- ACCESS INFO
+    --==================================================
+
+    local Access =
+        Create(
+            "Frame",
+            {
+                Name = "Access",
+
+                Position =
+                    UDim2.new(0, 15, 0, 270),
+
+                Size =
+                    UDim2.new(1, -30, 0, 150),
+
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        22,
+                        22,
+                        28
+                    ),
+
+                BorderSizePixel = 0
+            },
+            Page
+        )
+
+    Corner(Access, 10)
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(0, 15, 0, 12),
+
+            Size =
+                UDim2.new(1, -30, 0, 25),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.GothamBold,
+
+            Text = "Access",
+
+            TextColor3 =
+                Color3.fromRGB(
+                    255,
+                    255,
+                    255
+                ),
+
+            TextSize = 15,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Access
+    )
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(0, 15, 0, 48),
+
+            Size =
+                UDim2.new(1, -30, 0, 25),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.Gotham,
+
+            Text =
+                "Access Type: " ..
+                tostring(
+                    state.AccessType or "USER"
+                ),
+
+            TextColor3 =
+                Color3.fromRGB(
+                    200,
+                    200,
+                    205
+                ),
+
+            TextSize = 13,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Access
+    )
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(0, 15, 0, 78),
+
+            Size =
+                UDim2.new(1, -30, 0, 25),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.Gotham,
+
+            Text =
+                "UserId: " ..
+                tostring(
+                    LocalPlayer.UserId
+                ),
+
+            TextColor3 =
+                Color3.fromRGB(
+                    160,
+                    160,
+                    168
+                ),
+
+            TextSize = 12,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Access
     )
 
     --==================================================
-    -- CONNECTION CLEANUP
+    -- ADMIN PANEL
     --==================================================
 
-    task.spawn(
-        function()
+    local IsAdmin =
+        state.IsAdmin == true
 
-            while
-                not state.Destroyed
-                and
-                PageFrame.Parent
-            do
+    if IsAdmin then
 
-                task.wait(1)
+        local AdminPanel =
+            Create(
+                "Frame",
+                {
+                    Name = "AdminPanel",
 
+                    Position =
+                        UDim2.new(0, 15, 0, 435),
+
+                    Size =
+                        UDim2.new(1, -30, 0, 170),
+
+                    BackgroundColor3 =
+                        Color3.fromRGB(
+                            22,
+                            22,
+                            28
+                        ),
+
+                    BorderSizePixel = 0
+                },
+                Page
+            )
+
+        Corner(AdminPanel, 10)
+
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(0, 15, 0, 12),
+
+                Size =
+                    UDim2.new(1, -30, 0, 25),
+
+                BackgroundTransparency = 1,
+
+                Font =
+                    Enum.Font.GothamBold,
+
+                Text = "Admin Panel",
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
+
+                TextSize = 15,
+
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            AdminPanel
+        )
+
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(0, 15, 0, 48),
+
+                Size =
+                    UDim2.new(1, -30, 0, 25),
+
+                BackgroundTransparency = 1,
+
+                Font =
+                    Enum.Font.Gotham,
+
+                Text =
+                    "Online Players: " ..
+                    tostring(
+                        #Players:GetPlayers()
+                    ),
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        200,
+                        200,
+                        205
+                    ),
+
+                TextSize = 13,
+
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            AdminPanel
+        )
+
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(0, 15, 0, 80),
+
+                Size =
+                    UDim2.new(1, -30, 0, 25),
+
+                BackgroundTransparency = 1,
+
+                Font =
+                    Enum.Font.Gotham,
+
+                Text =
+                    "Admin access is enabled.",
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        170,
+                        170,
+                        178
+                    ),
+
+                TextSize = 12,
+
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            AdminPanel
+        )
+
+        local Refresh =
+            Create(
+                "TextButton",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            15,
+                            0,
+                            115
+                        ),
+
+                    Size =
+                        UDim2.new(
+                            0,
+                            150,
+                            0,
+                            35
+                        ),
+
+                    BackgroundColor3 =
+                        Color3.fromRGB(
+                            35,
+                            35,
+                            43
+                        ),
+
+                    BorderSizePixel = 0,
+
+                    Font =
+                        Enum.Font.GothamMedium,
+
+                    Text = "Refresh",
+
+                    TextColor3 =
+                        Color3.fromRGB(
+                            225,
+                            225,
+                            230
+                        ),
+
+                    TextSize = 12
+                },
+                AdminPanel
+            )
+
+        Corner(Refresh, 7)
+
+        Refresh.MouseButton1Click:Connect(function()
+
+            -- Update the player count.
+
+            local count =
+                AdminPanel:FindFirstChild(
+                    "OnlinePlayers"
+                )
+
+            if count then
+                count.Text =
+                    "Online Players: " ..
+                    tostring(
+                        #Players:GetPlayers()
+                    )
             end
 
-            pcall(function()
-                added:Disconnect()
-            end)
+        end)
 
-            pcall(function()
-                removing:Disconnect()
-            end)
+    end
 
-        end
-    )
-
-    return PageFrame
+    return Page
 end
 
-return Page
+return Settings
