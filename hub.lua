@@ -19,11 +19,36 @@ local PAGE_PATHS = {
     Settings = "Pages/Settings.lua",
 }
 
-local OPTIONAL_SCRIPTS =
-    "Pages/Scripts.lua"
+local SCRIPTS_PATH = "Pages/Scripts.lua"
+
+local Connections = {}
 
 --==================================================
--- DOWNLOAD
+-- HELPERS
+--==================================================
+
+local function Create(className, properties, parent)
+    local object = Instance.new(className)
+
+    for property, value in pairs(properties or {}) do
+        pcall(function()
+            object[property] = value
+        end)
+    end
+
+    object.Parent = parent
+
+    return object
+end
+
+local function Corner(object, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
+    corner.Parent = object
+end
+
+--==================================================
+-- HTTP
 --==================================================
 
 local function Download(path)
@@ -36,7 +61,7 @@ local function Download(path)
     end
 
     if type(result) ~= "string" or #result == 0 then
-        return nil, "empty response"
+        return nil, "Empty response"
     end
 
     return result
@@ -69,49 +94,28 @@ local function LoadModule(path)
 end
 
 --==================================================
--- GUI HELPERS
---==================================================
-
-local function Corner(object, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 8)
-    corner.Parent = object
-end
-
-local function Create(className, properties, parent)
-    local object = Instance.new(className)
-
-    for property, value in pairs(properties or {}) do
-        pcall(function()
-            object[property] = value
-        end)
-    end
-
-    object.Parent = parent
-
-    return object
-end
-
---==================================================
 -- PAGE BUTTON
 --==================================================
 
 local function CreatePageButton(parent, name)
     local button = Create("TextButton", {
         Name = name .. "Button",
+
         BackgroundColor3 =
             Color3.fromRGB(30, 30, 38),
 
         BorderSizePixel = 0,
 
-        Size = UDim2.new(1, -16, 0, 42),
+        Size =
+            UDim2.new(1, -16, 0, 40),
 
-        Font = Enum.Font.GothamMedium,
+        Font =
+            Enum.Font.GothamMedium,
 
         Text = name,
 
         TextColor3 =
-            Color3.fromRGB(210, 210, 215),
+            Color3.fromRGB(215, 215, 220),
 
         TextSize = 13,
 
@@ -124,15 +128,109 @@ local function CreatePageButton(parent, name)
 end
 
 --==================================================
--- CREATE HUB
+-- DRAG OBJECT
 --==================================================
 
-local function CreateHubGui()
+local function MakeDraggable(frame, handle)
+
+    local dragging = false
+    local dragStart
+    local startPosition
+
+    handle.InputBegan:Connect(function(input)
+
+        if
+            input.UserInputType ==
+            Enum.UserInputType.MouseButton1
+            or
+            input.UserInputType ==
+            Enum.UserInputType.Touch
+        then
+
+            dragging = true
+            dragStart = input.Position
+            startPosition = frame.Position
+
+            local changed
+
+            changed = input.Changed:Connect(function()
+
+                if
+                    input.UserInputState ==
+                    Enum.UserInputState.End
+                then
+
+                    dragging = false
+
+                    if changed then
+                        changed:Disconnect()
+                    end
+
+                end
+
+            end)
+
+        end
+
+    end)
+
+    local connection =
+        UserInputService.InputChanged:Connect(
+            function(input)
+
+                if not dragging then
+                    return
+                end
+
+                if
+                    input.UserInputType ~=
+                    Enum.UserInputType.MouseMovement
+                    and
+                    input.UserInputType ~=
+                    Enum.UserInputType.Touch
+                then
+                    return
+                end
+
+                local delta =
+                    input.Position -
+                    dragStart
+
+                frame.Position =
+                    UDim2.new(
+                        startPosition.X.Scale,
+                        startPosition.X.Offset +
+                            delta.X,
+
+                        startPosition.Y.Scale,
+                        startPosition.Y.Offset +
+                            delta.Y
+                    )
+
+            end
+        )
+
+    table.insert(
+        Connections,
+        connection
+    )
+end
+
+--==================================================
+-- CREATE GUI
+--==================================================
+
+local function CreateGui()
+
     local PlayerGui =
-        LocalPlayer:WaitForChild("PlayerGui")
+        LocalPlayer:WaitForChild(
+            "PlayerGui"
+        )
 
     local old =
-        PlayerGui:FindFirstChild("Areteon")
+        PlayerGui:FindFirstChild(
+            "Areteon"
+        )
 
     if old then
         old:Destroy()
@@ -140,7 +238,9 @@ local function CreateHubGui()
 
     local Gui = Create("ScreenGui", {
         Name = "Areteon",
+
         ResetOnSpawn = false,
+
         ZIndexBehavior =
             Enum.ZIndexBehavior.Sibling
     }, PlayerGui)
@@ -156,13 +256,27 @@ local function CreateHubGui()
             Vector2.new(0.5, 0.5),
 
         Position =
-            UDim2.new(0.5, 0, 0.5, 0),
+            UDim2.new(
+                0.5,
+                0,
+                0.5,
+                0
+            ),
 
         Size =
-            UDim2.new(0, 760, 0, 500),
+            UDim2.new(
+                0,
+                760,
+                0,
+                500
+            ),
 
         BackgroundColor3 =
-            Color3.fromRGB(15, 15, 19),
+            Color3.fromRGB(
+                15,
+                15,
+                19
+            ),
 
         BorderSizePixel = 0
     }, Gui)
@@ -177,10 +291,19 @@ local function CreateHubGui()
         Name = "TopBar",
 
         Size =
-            UDim2.new(1, 0, 0, 48),
+            UDim2.new(
+                1,
+                0,
+                0,
+                48
+            ),
 
         BackgroundColor3 =
-            Color3.fromRGB(20, 20, 25),
+            Color3.fromRGB(
+                20,
+                20,
+                25
+            ),
 
         BorderSizePixel = 0
     }, Main)
@@ -188,13 +311,25 @@ local function CreateHubGui()
     Corner(TopBar, 12)
 
     Create("TextLabel", {
+        Name = "Title",
+
         BackgroundTransparency = 1,
 
         Position =
-            UDim2.new(0, 15, 0, 0),
+            UDim2.new(
+                0,
+                15,
+                0,
+                0
+            ),
 
         Size =
-            UDim2.new(1, -70, 1, 0),
+            UDim2.new(
+                1,
+                -60,
+                1,
+                0
+            ),
 
         Font =
             Enum.Font.GothamBold,
@@ -202,7 +337,11 @@ local function CreateHubGui()
         Text = "ARETEON",
 
         TextColor3 =
-            Color3.fromRGB(255, 255, 255),
+            Color3.fromRGB(
+                255,
+                255,
+                255
+            ),
 
         TextSize = 17,
 
@@ -210,14 +349,30 @@ local function CreateHubGui()
             Enum.TextXAlignment.Left
     }, TopBar)
 
+    --==================================================
+    -- X BUTTON
+    --==================================================
+
     local Close = Create("TextButton", {
+        Name = "Close",
+
         BackgroundTransparency = 1,
 
         Position =
-            UDim2.new(1, -45, 0, 8),
+            UDim2.new(
+                1,
+                -45,
+                0,
+                7
+            ),
 
         Size =
-            UDim2.new(0, 35, 0, 32),
+            UDim2.new(
+                0,
+                35,
+                0,
+                34
+            ),
 
         Font =
             Enum.Font.GothamBold,
@@ -225,14 +380,14 @@ local function CreateHubGui()
         Text = "×",
 
         TextColor3 =
-            Color3.fromRGB(220, 220, 225),
+            Color3.fromRGB(
+                230,
+                230,
+                235
+            ),
 
         TextSize = 23
     }, TopBar)
-
-    Close.MouseButton1Click:Connect(function()
-        Gui.Enabled = false
-    end)
 
     --==================================================
     -- SIDEBAR
@@ -242,13 +397,27 @@ local function CreateHubGui()
         Name = "Sidebar",
 
         Position =
-            UDim2.new(0, 0, 0, 48),
+            UDim2.new(
+                0,
+                0,
+                0,
+                48
+            ),
 
         Size =
-            UDim2.new(0, 155, 1, -48),
+            UDim2.new(
+                0,
+                155,
+                1,
+                -48
+            ),
 
         BackgroundColor3 =
-            Color3.fromRGB(19, 19, 24),
+            Color3.fromRGB(
+                19,
+                19,
+                24
+            ),
 
         BorderSizePixel = 0
     }, Main)
@@ -273,10 +442,20 @@ local function CreateHubGui()
         Name = "Content",
 
         Position =
-            UDim2.new(0, 155, 0, 48),
+            UDim2.new(
+                0,
+                155,
+                0,
+                48
+            ),
 
         Size =
-            UDim2.new(1, -155, 1, -48),
+            UDim2.new(
+                1,
+                -155,
+                1,
+                -48
+            ),
 
         BackgroundTransparency = 1,
 
@@ -285,31 +464,160 @@ local function CreateHubGui()
         ClipsDescendants = true
     }, Main)
 
-    return Gui, Sidebar, Content
+    --==================================================
+    -- FLOATING ICON
+    --==================================================
+
+    local Icon = Create("TextButton", {
+        Name = "ToggleIcon",
+
+        AnchorPoint =
+            Vector2.new(
+                0.5,
+                0.5
+            ),
+
+        Position =
+            UDim2.new(
+                0,
+                70,
+                0.5,
+                0
+            ),
+
+        Size =
+            UDim2.new(
+                0,
+                56,
+                0,
+                56
+            ),
+
+        BackgroundColor3 =
+            Color3.fromRGB(
+                25,
+                25,
+                32
+            ),
+
+        BorderSizePixel = 0,
+
+        Font =
+            Enum.Font.GothamBold,
+
+        Text = "A",
+
+        TextColor3 =
+            Color3.fromRGB(
+                255,
+                255,
+                255
+            ),
+
+        TextSize = 20,
+
+        ZIndex = 100,
+
+        AutoButtonColor = true
+    }, Gui)
+
+    Corner(Icon, 28)
+
+    --==================================================
+    -- ICON OUTLINE
+    --==================================================
+
+    local Stroke =
+        Instance.new("UIStroke")
+
+    Stroke.Thickness = 1.5
+    Stroke.Transparency = 0.2
+    Stroke.Parent = Icon
+
+    return Gui,
+        Main,
+        TopBar,
+        Sidebar,
+        Content,
+        Icon,
+        Close
+end
+
+--==================================================
+-- DESTROY HUB
+--==================================================
+
+local function DestroyHub(state)
+
+    if not state then
+        return
+    end
+
+    state.Destroyed = true
+
+    -- Disconnect hub connections
+    for _, connection in
+        ipairs(Connections)
+    do
+
+        pcall(function()
+            connection:Disconnect()
+        end)
+
+    end
+
+    table.clear(Connections)
+
+    -- Destroy GUI
+    if state.Gui then
+
+        pcall(function()
+            state.Gui:Destroy()
+        end)
+
+    end
+
+    Hub.Gui = nil
+    Hub.State = nil
+
+    print(
+        "[Areteon] Hub terminated."
+    )
 end
 
 --==================================================
 -- LOAD PAGE
 --==================================================
 
-local function LoadPage(name, path, state)
-    print("[Areteon] Loading page:", name)
+local function LoadPage(
+    name,
+    path,
+    state
+)
+
+    print(
+        "[Areteon] Loading:",
+        name
+    )
 
     local module, errorMessage =
         LoadModule(path)
 
     if not module then
+
         warn(
             "[Areteon] " ..
             name ..
-            " failed: " ..
-            tostring(errorMessage)
+            " failed:"
         )
+
+        warn(errorMessage)
 
         return nil
     end
 
     if type(module) ~= "table" then
+
         warn(
             "[Areteon] " ..
             name ..
@@ -319,11 +627,14 @@ local function LoadPage(name, path, state)
         return nil
     end
 
-    if type(module.Start) ~= "function" then
+    if type(module.Start) ~=
+        "function"
+    then
+
         warn(
             "[Areteon] " ..
             name ..
-            ".Start does not exist."
+            ".Start() missing."
         )
 
         return nil
@@ -331,14 +642,19 @@ local function LoadPage(name, path, state)
 
     local success, page =
         pcall(function()
-            return module.Start(state)
+
+            return module.Start(
+                state
+            )
+
         end)
 
     if not success then
+
         warn(
             "[Areteon] " ..
             name ..
-            " failed:"
+            " error:"
         )
 
         warn(page)
@@ -347,16 +663,48 @@ local function LoadPage(name, path, state)
     end
 
     if not page then
+
         warn(
             "[Areteon] " ..
             name ..
-            " did not return a Frame."
+            " returned nil."
+        )
+
+        return nil
+    end
+
+    if not page:IsA("GuiObject") then
+
+        warn(
+            "[Areteon] " ..
+            name ..
+            " must return a GuiObject."
         )
 
         return nil
     end
 
     page.Name = name
+
+    page.Parent =
+        state.Content
+
+    page.Position =
+        UDim2.new(
+            0,
+            0,
+            0,
+            0
+        )
+
+    page.Size =
+        UDim2.new(
+            1,
+            0,
+            1,
+            0
+        )
+
     page.Visible = false
 
     return page
@@ -370,15 +718,24 @@ function Hub.Start(options)
 
     options = options or {}
 
-    local Gui, Sidebar, Content =
-        CreateHubGui()
+    local Gui,
+        Main,
+        TopBar,
+        Sidebar,
+        Content,
+        Icon,
+        Close =
+        CreateGui()
 
     local state = {
+
         Player =
-            options.Player or LocalPlayer,
+            options.Player or
+            LocalPlayer,
 
         AccessType =
-            options.AccessType or "USER",
+            options.AccessType or
+            "USER",
 
         IsAdmin =
             options.IsAdmin == true,
@@ -388,22 +745,79 @@ function Hub.Start(options)
 
         Gui = Gui,
 
-        Main = Gui.Main,
+        Main = Main,
+
+        TopBar = TopBar,
 
         Sidebar = Sidebar,
 
         Content = Content,
 
+        Icon = Icon,
+
         Pages = {},
 
-        CurrentPage = nil
+        Buttons = {},
+
+        CurrentPage = nil,
+
+        Destroyed = false
     }
+
+    --==================================================
+    -- MAIN WINDOW DRAG
+    --==================================================
+
+    MakeDraggable(
+        Main,
+        TopBar
+    )
+
+    --==================================================
+    -- ICON DRAG
+    --==================================================
+
+    MakeDraggable(
+        Icon,
+        Icon
+    )
+
+    --==================================================
+    -- ICON TOGGLE
+    --==================================================
+
+    Icon.MouseButton1Click:Connect(
+        function()
+
+            if state.Destroyed then
+                return
+            end
+
+            Main.Visible =
+                not Main.Visible
+
+        end
+    )
+
+    --==================================================
+    -- X = TERMINATE
+    --==================================================
+
+    Close.MouseButton1Click:Connect(
+        function()
+
+            DestroyHub(state)
+
+        end
+    )
 
     --==================================================
     -- LOAD REQUIRED PAGES
     --==================================================
 
-    for name, path in pairs(PAGE_PATHS) do
+    for name, path in pairs(
+        PAGE_PATHS
+    ) do
 
         local page =
             LoadPage(
@@ -413,8 +827,12 @@ function Hub.Start(options)
             )
 
         if page then
-            state.Pages[name] = page
+
+            state.Pages[name] =
+                page
+
         end
+
     end
 
     --==================================================
@@ -422,11 +840,13 @@ function Hub.Start(options)
     --==================================================
 
     local scriptSource =
-        Download(OPTIONAL_SCRIPTS)
+        Download(
+            SCRIPTS_PATH
+        )
 
     if scriptSource then
 
-        local fn =
+        local fn, compileError =
             loadstring(scriptSource)
 
         if fn then
@@ -434,32 +854,82 @@ function Hub.Start(options)
             local success, module =
                 pcall(fn)
 
-            if success and
-                type(module) == "table" and
-                type(module.Start) == "function" then
+            if
+                success
+                and
+                type(module) == "table"
+                and
+                type(module.Start) ==
+                "function"
+            then
 
                 local ok, page =
                     pcall(function()
-                        return module.Start(state)
+
+                        return module.Start(
+                            state
+                        )
+
                     end)
 
-                if ok and page then
-                    page.Name = "Scripts"
-                    page.Visible = false
+                if
+                    ok
+                    and
+                    page
+                    and
+                    page:IsA("GuiObject")
+                then
 
-                    state.Pages.Scripts = page
+                    page.Name =
+                        "Scripts"
+
+                    page.Parent =
+                        Content
+
+                    page.Position =
+                        UDim2.new(
+                            0,
+                            0,
+                            0,
+                            0
+                        )
+
+                    page.Size =
+                        UDim2.new(
+                            1,
+                            0,
+                            1,
+                            0
+                        )
+
+                    page.Visible =
+                        false
+
+                    state.Pages.Scripts =
+                        page
 
                     print(
-                        "[Areteon] Scripts page loaded."
+                        "[Areteon] Scripts loaded."
                     )
+
                 end
+
             end
+
+        else
+
+            warn(
+                "[Areteon] Scripts compile error:"
+            )
+
+            warn(compileError)
+
         end
 
     else
 
         print(
-            "[Areteon] Scripts page not found. Skipping."
+            "[Areteon] Scripts.lua not found. Skipping."
         )
 
     end
@@ -468,138 +938,121 @@ function Hub.Start(options)
     -- PAGE BUTTONS
     --==================================================
 
-    local Buttons = {}
+    local pageOrder = {
+        "Home",
+        "Player",
+        "Scripts",
+        "Settings"
+    }
 
-    for name, page in pairs(state.Pages) do
+    for _, name in
+        ipairs(pageOrder)
+    do
 
-        local button =
-            CreatePageButton(
-                Sidebar,
-                name
+        local page =
+            state.Pages[name]
+
+        if page then
+
+            local button =
+                CreatePageButton(
+                    Sidebar,
+                    name
+                )
+
+            state.Buttons[name] =
+                button
+
+            button.MouseButton1Click:Connect(
+                function()
+
+                    if state.Destroyed then
+                        return
+                    end
+
+                    for _, otherPage in
+                        pairs(state.Pages)
+                    do
+
+                        otherPage.Visible =
+                            false
+
+                    end
+
+                    for _, otherButton in
+                        pairs(state.Buttons)
+                    do
+
+                        otherButton.BackgroundColor3 =
+                            Color3.fromRGB(
+                                30,
+                                30,
+                                38
+                            )
+
+                    end
+
+                    page.Visible =
+                        true
+
+                    button.BackgroundColor3 =
+                        Color3.fromRGB(
+                            45,
+                            45,
+                            58
+                        )
+
+                    state.CurrentPage =
+                        name
+
+                end
             )
 
-        Buttons[name] = button
+        end
 
-        button.MouseButton1Click:Connect(
-            function()
-
-                for _, otherPage in
-                    pairs(state.Pages) do
-
-                    otherPage.Visible = false
-                end
-
-                page.Visible = true
-
-                state.CurrentPage = name
-
-            end
-        )
     end
 
     --==================================================
-    -- DEFAULT PAGE
+    -- HOME DEFAULT
     --==================================================
 
     if state.Pages.Home then
 
         for _, page in
-            pairs(state.Pages) do
+            pairs(state.Pages)
+        do
 
             page.Visible = false
 
         end
 
-        state.Pages.Home.Visible = true
-        state.CurrentPage = "Home"
+        state.Pages.Home.Visible =
+            true
 
-    else
+        state.CurrentPage =
+            "Home"
 
-        for name, page in
-            pairs(state.Pages) do
+        if state.Buttons.Home then
 
-            page.Visible = true
-            state.CurrentPage = name
-
-            break
-        end
-    end
-
-    --==================================================
-    -- DRAG
-    --==================================================
-
-    local dragging = false
-    local dragStart
-    local startPosition
-
-    TopBar = Gui.Main.TopBar
-
-    TopBar.InputBegan:Connect(function(input)
-
-        if input.UserInputType ==
-            Enum.UserInputType.MouseButton1 then
-
-            dragging = true
-            dragStart = input.Position
-            startPosition = MainPosition(
-                Gui.Main
-            )
-        end
-    end)
-
-    TopBar.InputEnded:Connect(function(input)
-
-        if input.UserInputType ==
-            Enum.UserInputType.MouseButton1 then
-
-            dragging = false
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(
-        function(input)
-
-            if not dragging then
-                return
-            end
-
-            if input.UserInputType ~=
-                Enum.UserInputType.MouseMovement then
-
-                return
-            end
-
-            local delta =
-                input.Position - dragStart
-
-            Gui.Main.Position =
-                UDim2.new(
-                    startPosition.X.Scale,
-                    startPosition.X.Offset +
-                        delta.X,
-
-                    startPosition.Y.Scale,
-                    startPosition.Y.Offset +
-                        delta.Y
+            state.Buttons.Home.BackgroundColor3 =
+                Color3.fromRGB(
+                    45,
+                    45,
+                    58
                 )
+
         end
-    )
+
+    end
 
     Hub.Gui = Gui
     Hub.State = state
 
-    print("[Areteon] Hub started.")
+    print(
+        "[Areteon] Hub started."
+    )
 
     return state
-end
-
---==================================================
--- POSITION HELPER
---==================================================
-
-function MainPosition(frame)
-    return frame.Position
 end
 
 return Hub
