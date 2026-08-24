@@ -13,7 +13,7 @@ local LocalPlayer = Players.LocalPlayer
 local Connections = {}
 
 --==================================================
--- DEFAULTS
+-- CONFIG
 --==================================================
 
 local DEFAULT_WALK_SPEED = 16
@@ -43,7 +43,6 @@ end
 
 local function Corner(object, radius)
     local corner = Instance.new("UICorner")
-
     corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = object
 end
@@ -58,36 +57,50 @@ local function GetHumanoid()
     return character:FindFirstChildOfClass("Humanoid")
 end
 
-local function GetRoot()
-    local character = LocalPlayer.Character
+--==================================================
+-- CLEANUP
+--==================================================
 
-    if not character then
-        return nil
+local function DisconnectAll()
+    for _, connection in ipairs(Connections) do
+        pcall(function()
+            connection:Disconnect()
+        end)
     end
 
-    return character:FindFirstChild("HumanoidRootPart")
+    table.clear(Connections)
 end
 
 --==================================================
 -- SECTION
 --==================================================
 
-local function Section(parent, title)
-    local frame = Create("Frame", {
-        Size = UDim2.new(1, 0, 0, 42),
+local function CreateSection(parent, title)
 
-        BackgroundColor3 = Color3.fromRGB(
-            23,
-            23,
-            29
+    local section = Create("Frame", {
+
+        Size = UDim2.new(
+            1,
+            -30,
+            0,
+            40
         ),
 
+        BackgroundColor3 =
+            Color3.fromRGB(
+                23,
+                23,
+                29
+            ),
+
         BorderSizePixel = 0
+
     }, parent)
 
-    Corner(frame, 8)
+    Corner(section, 8)
 
     Create("TextLabel", {
+
         BackgroundTransparency = 1,
 
         Position = UDim2.new(
@@ -108,51 +121,49 @@ local function Section(parent, title)
 
         Text = title,
 
-        TextColor3 = Color3.fromRGB(
-            235,
-            235,
-            240
-        ),
+        TextColor3 =
+            Color3.fromRGB(
+                235,
+                235,
+                240
+            ),
 
         TextSize = 14,
 
         TextXAlignment =
             Enum.TextXAlignment.Left
-    }, frame)
 
-    return frame
+    }, section)
+
+    return section
 end
 
 --==================================================
--- CONTROL BOX
+-- CONTROL PANEL
 --==================================================
 
-local function ControlBox(
+local function CreatePanel(
     parent,
-    title,
-    height
+    title
 )
 
-    local frame = Create("Frame", {
-        Size = UDim2.new(
-            0.5,
-            -5,
-            0,
-            height or 90
-        ),
+    local panel = Create("Frame", {
 
-        BackgroundColor3 = Color3.fromRGB(
-            27,
-            27,
-            34
-        ),
+        BackgroundColor3 =
+            Color3.fromRGB(
+                27,
+                27,
+                34
+            ),
 
         BorderSizePixel = 0
+
     }, parent)
 
-    Corner(frame, 7)
+    Corner(panel, 7)
 
     Create("TextLabel", {
+
         BackgroundTransparency = 1,
 
         Position = UDim2.new(
@@ -164,51 +175,54 @@ local function ControlBox(
 
         Size = UDim2.new(
             1,
-            -20,
+            -45,
             0,
-            22
+            20
         ),
 
         Font = Enum.Font.GothamBold,
 
         Text = title,
 
-        TextColor3 = Color3.fromRGB(
-            235,
-            235,
-            240
-        ),
+        TextColor3 =
+            Color3.fromRGB(
+                235,
+                235,
+                240
+            ),
 
         TextSize = 13,
 
         TextXAlignment =
             Enum.TextXAlignment.Left
-    }, frame)
 
-    return frame
+    }, panel)
+
+    return panel
 end
 
 --==================================================
 -- INPUT
 --==================================================
 
-local function Input(
+local function CreateInput(
     parent,
     text,
     position,
     size
 )
 
-    local box = Create("TextBox", {
+    local input = Create("TextBox", {
+
         Position = position,
 
         Size = size,
 
         BackgroundColor3 =
             Color3.fromRGB(
-                35,
-                35,
-                43
+                38,
+                38,
+                47
             ),
 
         BorderSizePixel = 0,
@@ -234,171 +248,175 @@ local function Input(
         TextSize = 12,
 
         ClearTextOnFocus = false
+
     }, parent)
 
-    Corner(box, 6)
+    Corner(input, 6)
 
-    return box
+    return input
 end
 
 --==================================================
 -- CHECKBOX
 --==================================================
 
-local function Checkbox(
+local function CreateCheckbox(
     parent,
     callback
 )
 
-    local button = Create("TextButton", {
+    local checkbox = Create("TextButton", {
+
         AnchorPoint =
             Vector2.new(
                 1,
-                0.5
+                0
             ),
 
-        Position =
-            UDim2.new(
-                1,
-                -10,
-                0,
-                20
-            ),
+        Position = UDim2.new(
+            1,
+            -10,
+            0,
+            8
+        ),
 
-        Size =
-            UDim2.new(
-                0,
-                22,
-                0,
-                22
-            ),
+        Size = UDim2.new(
+            0,
+            22,
+            0,
+            22
+        ),
 
         BackgroundColor3 =
             Color3.fromRGB(
-                38,
-                38,
-                47
+                42,
+                42,
+                50
             ),
 
         BorderSizePixel = 0,
 
-        Text = ""
+        Text = "",
+
+        Font = Enum.Font.GothamBold,
+
+        TextSize = 14,
+
+        AutoButtonColor = false
+
     }, parent)
 
-    Corner(button, 5)
+    Corner(checkbox, 5)
 
     local enabled = false
 
     local function Update()
+
         if enabled then
-            button.BackgroundColor3 =
+
+            checkbox.BackgroundColor3 =
                 Color3.fromRGB(
                     80,
                     140,
                     255
                 )
 
-            button.Text = "✓"
-        else
-            button.BackgroundColor3 =
+            checkbox.Text = "✓"
+
+            checkbox.TextColor3 =
                 Color3.fromRGB(
-                    38,
-                    38,
-                    47
+                    255,
+                    255,
+                    255
                 )
 
-            button.Text = ""
+        else
+
+            checkbox.BackgroundColor3 =
+                Color3.fromRGB(
+                    42,
+                    42,
+                    50
+                )
+
+            checkbox.Text = ""
+
         end
+
     end
 
-    button.MouseButton1Click:Connect(function()
-        enabled = not enabled
+    checkbox.MouseButton1Click:Connect(
+        function()
 
-        Update()
+            enabled = not enabled
 
-        if callback then
-            callback(enabled)
+            Update()
+
+            if callback then
+                callback(enabled)
+            end
+
         end
-    end)
+    )
 
     Update()
 
-    return button
+    return checkbox
 end
 
 --==================================================
 -- SLIDER
 --==================================================
 
-local function Slider(
+local function CreateSlider(
     parent,
     minimum,
     maximum,
-    defaultValue,
+    default,
     callback
 )
 
-    local holder = Create("Frame", {
+    local slider = Create("Frame", {
+
         Position = UDim2.new(
             0,
             10,
             0,
-            63
+            67
         ),
 
         Size = UDim2.new(
             1,
             -20,
             0,
-            16
+            6
         ),
-
-        BackgroundTransparency = 1
-    }, parent)
-
-    local bar = Create("Frame", {
-        AnchorPoint =
-            Vector2.new(
-                0,
-                0.5
-            ),
-
-        Position =
-            UDim2.new(
-                0,
-                0,
-                0.5,
-                0
-            ),
-
-        Size =
-            UDim2.new(
-                1,
-                0,
-                0,
-                5
-            ),
 
         BackgroundColor3 =
             Color3.fromRGB(
-                50,
-                50,
-                60
+                48,
+                48,
+                58
             ),
 
         BorderSizePixel = 0
-    }, holder)
 
-    Corner(bar, 5)
+    }, parent)
+
+    Corner(slider, 5)
+
+    local normalized =
+        (default - minimum) /
+        (maximum - minimum)
 
     local fill = Create("Frame", {
-        Size =
-            UDim2.new(
-                0,
-                0,
-                1,
-                0
-            ),
+
+        Size = UDim2.new(
+            normalized,
+            0,
+            1,
+            0
+        ),
 
         BackgroundColor3 =
             Color3.fromRGB(
@@ -408,32 +426,32 @@ local function Slider(
             ),
 
         BorderSizePixel = 0
-    }, bar)
+
+    }, slider)
 
     Corner(fill, 5)
 
     local knob = Create("TextButton", {
+
         AnchorPoint =
             Vector2.new(
                 0.5,
                 0.5
             ),
 
-        Position =
-            UDim2.new(
-                0,
-                0,
-                0.5,
-                0
-            ),
+        Position = UDim2.new(
+            normalized,
+            0,
+            0.5,
+            0
+        ),
 
-        Size =
-            UDim2.new(
-                0,
-                14,
-                0,
-                14
-            ),
+        Size = UDim2.new(
+            0,
+            14,
+            0,
+            14
+        ),
 
         BackgroundColor3 =
             Color3.fromRGB(
@@ -445,41 +463,53 @@ local function Slider(
         BorderSizePixel = 0,
 
         Text = "",
+
         AutoButtonColor = false
-    }, bar)
+
+    }, slider)
 
     Corner(knob, 10)
 
     local dragging = false
-    local value = defaultValue
 
-    local function SetValue(inputX)
-        local startX = bar.AbsolutePosition.X
-        local width = bar.AbsoluteSize.X
+    local function SetValue(x)
+
+        local startX =
+            slider.AbsolutePosition.X
+
+        local width =
+            slider.AbsoluteSize.X
+
+        if width <= 0 then
+            return
+        end
 
         local percent =
             math.clamp(
-                (inputX - startX) / width,
+                (x - startX) / width,
                 0,
                 1
             )
 
-        value =
+        local value =
             minimum +
-            ((maximum - minimum) * percent)
+            (
+                (maximum - minimum)
+                * percent
+            )
 
         value =
             math.floor(
                 value + 0.5
             )
 
-        local normalized =
+        local newNormalized =
             (value - minimum) /
             (maximum - minimum)
 
         fill.Size =
             UDim2.new(
-                normalized,
+                newNormalized,
                 0,
                 1,
                 0
@@ -487,7 +517,7 @@ local function Slider(
 
         knob.Position =
             UDim2.new(
-                normalized,
+                newNormalized,
                 0,
                 0.5,
                 0
@@ -496,81 +526,70 @@ local function Slider(
         if callback then
             callback(value)
         end
+
     end
 
-    knob.InputBegan:Connect(function(input)
-        if input.UserInputType ==
-            Enum.UserInputType.MouseButton1
-        then
-            dragging = true
+    slider.InputBegan:Connect(
+        function(input)
+
+            if input.UserInputType ==
+                Enum.UserInputType.MouseButton1
+            then
+
+                dragging = true
+
+                SetValue(
+                    input.Position.X
+                )
+
+            end
+
         end
-    end)
+    )
 
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType ==
-            Enum.UserInputType.MouseButton1
-        then
-            dragging = false
-        end
-    end)
+    table.insert(
+        Connections,
 
-    UserInputService.InputChanged:Connect(function(input)
-        if not dragging then
-            return
-        end
+        UserInputService.InputEnded:Connect(
+            function(input)
 
-        if input.UserInputType ==
-            Enum.UserInputType.MouseMovement
-        then
-            SetValue(input.Position.X)
-        end
-    end)
+                if input.UserInputType ==
+                    Enum.UserInputType.MouseButton1
+                then
 
-    bar.InputBegan:Connect(function(input)
-        if input.UserInputType ==
-            Enum.UserInputType.MouseButton1
-        then
-            SetValue(input.Position.X)
-        end
-    end)
+                    dragging = false
 
-    task.defer(function()
-        local normalized =
-            (defaultValue - minimum) /
-            (maximum - minimum)
+                end
 
-        fill.Size =
-            UDim2.new(
-                normalized,
-                0,
-                1,
-                0
-            )
+            end
+        )
+    )
 
-        knob.Position =
-            UDim2.new(
-                normalized,
-                0,
-                0.5,
-                0
-            )
-    end)
+    table.insert(
+        Connections,
 
-    return holder
-end
+        UserInputService.InputChanged:Connect(
+            function(input)
 
---==================================================
--- CLEANUP
---==================================================
+                if not dragging then
+                    return
+                end
 
-local function DisconnectAll()
-    for _, connection in ipairs(Connections) do
-        pcall(function()
-            connection:Disconnect()
-        end)
-    end
+                if input.UserInputType ==
+                    Enum.UserInputType.MouseMovement
+                then
 
-    table.clear(Connections)
+                    SetValue(
+                        input.Position.X
+                    )
+
+                end
+
+            end
+        )
+    )
+
+    return slider
 end
 
 --==================================================
@@ -581,8 +600,30 @@ function Page.Start(state)
 
     DisconnectAll()
 
+    --==================================================
+    -- REMOVE OLD PAGE
+    --==================================================
+
+    local oldPage =
+        state.Content:FindFirstChild(
+            "Player"
+        )
+
+    if oldPage then
+        oldPage:Destroy()
+    end
+
+    --==================================================
+    -- PAGE FRAME
+    --==================================================
+
     local PageFrame = Create("Frame", {
+
         Name = "Player",
+
+        Visible = true,
+
+        Active = true,
 
         Size = UDim2.new(
             1,
@@ -603,85 +644,55 @@ function Page.Start(state)
         BorderSizePixel = 0,
 
         ClipsDescendants = true
+
     }, state.Content)
 
     --==================================================
-    -- SCROLLING AREA
+    -- CONTENT CONTAINER
     --==================================================
 
-    local Scroll = Create("ScrollingFrame", {
-        Name = "PlayerScroll",
+    local Content = Create("Frame", {
+
+        Name = "PlayerContent",
 
         Position = UDim2.new(
             0,
-            10,
+            15,
             0,
-            10
+            15
         ),
 
         Size = UDim2.new(
             1,
-            -20,
+            -30,
             1,
-            -20
+            -30
         ),
 
         BackgroundTransparency = 1,
 
-        BorderSizePixel = 0,
+        BorderSizePixel = 0
 
-        CanvasSize = UDim2.new(
+    }, PageFrame)
+
+    --==================================================
+    -- TITLE
+    --==================================================
+
+    local Title = Create("TextLabel", {
+
+        Position = UDim2.new(
             0,
             0,
             0,
             0
         ),
 
-        AutomaticCanvasSize =
-            Enum.AutomaticSize.Y,
-
-        ScrollBarThickness = 5,
-
-        ScrollBarImageTransparency = 0.15,
-
-        ScrollingDirection =
-            Enum.ScrollingDirection.Y
-    }, PageFrame)
-
-    local Layout = Create("UIListLayout", {
-        Padding = UDim.new(
-            0,
-            10
-        ),
-
-        SortOrder =
-            Enum.SortOrder.LayoutOrder
-    }, Scroll)
-
-    Create("UIPadding", {
-        PaddingTop = UDim.new(
-            0,
-            5
-        ),
-
-        PaddingBottom = UDim.new(
-            0,
-            15
-        )
-    }, Scroll)
-
-    --==================================================
-    -- TITLE
-    --==================================================
-
-    Create("TextLabel", {
-        LayoutOrder = 1,
-
         Size = UDim2.new(
             1,
-            -10,
             0,
-            40
+            0,
+            35
         ),
 
         BackgroundTransparency = 1,
@@ -701,75 +712,90 @@ function Page.Start(state)
 
         TextXAlignment =
             Enum.TextXAlignment.Left
-    }, Scroll)
+
+    }, Content)
 
     --==================================================
     -- MOVEMENT SECTION
     --==================================================
 
     local Movement =
-        Section(
-            Scroll,
+        CreateSection(
+            Content,
             "Movement"
         )
 
-    Movement.LayoutOrder = 2
+    Movement.Position =
+        UDim2.new(
+            0,
+            0,
+            0,
+            45
+        )
 
     --==================================================
     -- MOVEMENT GRID
     --==================================================
 
     local MovementGrid = Create("Frame", {
-        LayoutOrder = 3,
 
-        Size = UDim2.new(
-            1,
-            -10,
+        Position = UDim2.new(
             0,
-            205
-        ),
-
-        BackgroundTransparency = 1
-    }, Scroll)
-
-    local Grid = Create("UIGridLayout", {
-        CellSize = UDim2.new(
-            0.5,
-            -5,
+            0,
             0,
             95
         ),
 
-        CellPadding = UDim2.new(
+        Size = UDim2.new(
+            1,
             0,
-            10,
             0,
-            10
+            200
         ),
 
-        SortOrder =
-            Enum.SortOrder.LayoutOrder
-    }, MovementGrid)
+        BackgroundTransparency = 1
+
+    }, Content)
+
+    Create(
+        "UIGridLayout",
+        {
+            CellSize = UDim2.new(
+                0.5,
+                -5,
+                0,
+                95
+            ),
+
+            CellPadding = UDim2.new(
+                0,
+                10,
+                0,
+                10
+            ),
+
+            SortOrder =
+                Enum.SortOrder.LayoutOrder
+        },
+        MovementGrid
+    )
 
     --==================================================
     -- WALK SPEED
     --==================================================
 
     local SpeedPanel =
-        ControlBox(
+        CreatePanel(
             MovementGrid,
-            "WalkSpeed",
-            95
+            "WalkSpeed"
         )
 
     SpeedPanel.LayoutOrder = 1
 
     local SpeedBox =
-        Input(
+        CreateInput(
             SpeedPanel,
-            tostring(
-                DEFAULT_WALK_SPEED
-            ),
+            "16",
             UDim2.new(
                 0,
                 10,
@@ -780,55 +806,66 @@ function Page.Start(state)
                 1,
                 -20,
                 0,
-                27
+                25
             )
         )
 
-    local function SetWalkSpeed(value)
-        local humanoid = GetHumanoid()
+    SpeedBox.FocusLost:Connect(
+        function()
 
-        if humanoid then
-            humanoid.WalkSpeed = value
-        end
-    end
-
-    SpeedBox.FocusLost:Connect(function()
-        local value =
-            tonumber(
-                SpeedBox.Text
-            )
-
-        if not value then
-            SpeedBox.Text =
-                tostring(
-                    DEFAULT_WALK_SPEED
+            local value =
+                tonumber(
+                    SpeedBox.Text
                 )
-            return
+
+            if not value then
+
+                SpeedBox.Text =
+                    "16"
+
+                return
+
+            end
+
+            value =
+                math.clamp(
+                    value,
+                    MIN_WALK_SPEED,
+                    MAX_WALK_SPEED
+                )
+
+            SpeedBox.Text =
+                tostring(value)
+
+            local humanoid =
+                GetHumanoid()
+
+            if humanoid then
+                humanoid.WalkSpeed =
+                    value
+            end
+
         end
+    )
 
-        value =
-            math.clamp(
-                value,
-                MIN_WALK_SPEED,
-                MAX_WALK_SPEED
-            )
-
-        SpeedBox.Text =
-            tostring(value)
-
-        SetWalkSpeed(value)
-    end)
-
-    Slider(
+    CreateSlider(
         SpeedPanel,
         MIN_WALK_SPEED,
         MAX_WALK_SPEED,
         DEFAULT_WALK_SPEED,
         function(value)
+
             SpeedBox.Text =
                 tostring(value)
 
-            SetWalkSpeed(value)
+            local humanoid =
+                GetHumanoid()
+
+            if humanoid then
+                humanoid.WalkSpeed =
+                    value
+            end
+
         end
     )
 
@@ -837,20 +874,17 @@ function Page.Start(state)
     --==================================================
 
     local JumpPanel =
-        ControlBox(
+        CreatePanel(
             MovementGrid,
-            "JumpPower",
-            95
+            "JumpPower"
         )
 
     JumpPanel.LayoutOrder = 2
 
     local JumpBox =
-        Input(
+        CreateInput(
             JumpPanel,
-            tostring(
-                DEFAULT_JUMP_POWER
-            ),
+            "50",
             UDim2.new(
                 0,
                 10,
@@ -865,149 +899,117 @@ function Page.Start(state)
             )
         )
 
-    JumpBox.FocusLost:Connect(function()
-        local value =
-            tonumber(
-                JumpBox.Text
-            )
+    JumpBox.FocusLost:Connect(
+        function()
 
-        if not value then
-            JumpBox.Text =
-                tostring(
-                    DEFAULT_JUMP_POWER
+            local value =
+                tonumber(
+                    JumpBox.Text
                 )
-            return
-        end
 
-        local humanoid =
-            GetHumanoid()
+            if not value then
 
-        if humanoid then
-            humanoid.JumpPower = value
+                JumpBox.Text =
+                    "50"
+
+                return
+
+            end
+
+            local humanoid =
+                GetHumanoid()
+
+            if humanoid then
+                humanoid.JumpPower =
+                    value
+            end
+
         end
-    end)
+    )
 
     --==================================================
     -- FLY
     --==================================================
 
     local FlyPanel =
-        ControlBox(
+        CreatePanel(
             MovementGrid,
-            "Fly",
-            95
+            "Fly"
         )
 
     FlyPanel.LayoutOrder = 3
 
-    Checkbox(
+    CreateCheckbox(
         FlyPanel,
         function(enabled)
 
-            if enabled then
-                print(
-                    "[Areteon] Fly enabled"
-                )
-            else
-                print(
-                    "[Areteon] Fly disabled"
-                )
-            end
+            print(
+                "[Areteon] Fly:",
+                enabled
+            )
 
         end
     )
 
-    Create("TextLabel", {
-        BackgroundTransparency = 1,
-
-        Position = UDim2.new(
-            0,
-            10,
-            0,
-            38
-        ),
-
-        Size = UDim2.new(
-            0,
-            55,
-            0,
-            25
-        ),
-
-        Font = Enum.Font.Gotham,
-
-        Text = "Speed",
-
-        TextColor3 =
-            Color3.fromRGB(
-                170,
-                170,
-                180
-            ),
-
-        TextSize = 11,
-
-        TextXAlignment =
-            Enum.TextXAlignment.Left
-    }, FlyPanel)
-
-    local FlySpeedBox =
-        Input(
+    local FlySpeed =
+        CreateInput(
             FlyPanel,
-            tostring(
-                DEFAULT_FLY_SPEED
-            ),
+            "50",
             UDim2.new(
                 0,
-                62,
+                10,
                 0,
-                34
+                38
             ),
             UDim2.new(
                 1,
-                -72,
+                -20,
                 0,
                 30
             )
         )
 
-    FlySpeedBox.FocusLost:Connect(function()
-        local value =
-            tonumber(
-                FlySpeedBox.Text
-            )
+    FlySpeed.FocusLost:Connect(
+        function()
 
-        if not value then
-            FlySpeedBox.Text =
+            local value =
+                tonumber(
+                    FlySpeed.Text
+                )
+
+            if not value then
+
+                FlySpeed.Text =
+                    "50"
+
+                return
+
+            end
+
+            FlySpeed.Text =
                 tostring(
-                    DEFAULT_FLY_SPEED
+                    math.max(
+                        0,
+                        value
+                    )
                 )
-            return
-        end
 
-        FlySpeedBox.Text =
-            tostring(
-                math.max(
-                    0,
-                    value
-                )
-            )
-    end)
+        end
+    )
 
     --==================================================
     -- NOCLIP
     --==================================================
 
     local NoclipPanel =
-        ControlBox(
+        CreatePanel(
             MovementGrid,
-            "Noclip",
-            95
+            "Noclip"
         )
 
     NoclipPanel.LayoutOrder = 4
 
-    Checkbox(
+    CreateCheckbox(
         NoclipPanel,
         function(enabled)
 
@@ -1036,9 +1038,11 @@ function Page.Start(state)
 
                                     object.CanCollide =
                                         false
+
                                 end
 
                             end
+
                         end
                     )
 
@@ -1048,6 +1052,7 @@ function Page.Start(state)
                 )
 
             end
+
         end
     )
 
@@ -1056,56 +1061,72 @@ function Page.Start(state)
     --==================================================
 
     local Extras =
-        Section(
-            Scroll,
+        CreateSection(
+            Content,
             "Extras"
         )
 
-    Extras.LayoutOrder = 4
+    Extras.Position =
+        UDim2.new(
+            0,
+            0,
+            0,
+            305
+        )
 
     local ExtrasGrid = Create("Frame", {
-        LayoutOrder = 5,
+
+        Position = UDim2.new(
+            0,
+            0,
+            0,
+            355
+        ),
 
         Size = UDim2.new(
             1,
-            -10,
+            0,
             0,
             95
         ),
 
         BackgroundTransparency = 1
-    }, Scroll)
 
-    Create("UIGridLayout", {
-        CellSize = UDim2.new(
-            0.5,
-            -5,
-            0,
-            95
-        ),
+    }, Content)
 
-        CellPadding = UDim2.new(
-            0,
-            10,
-            0,
-            0
-        )
-    }, ExtrasGrid)
+    Create(
+        "UIGridLayout",
+        {
+            CellSize = UDim2.new(
+                0.5,
+                -5,
+                0,
+                95
+            ),
+
+            CellPadding = UDim2.new(
+                0,
+                10,
+                0,
+                0
+            )
+        },
+        ExtrasGrid
+    )
 
     --==================================================
     -- INFINITE JUMP
     --==================================================
 
     local InfinitePanel =
-        ControlBox(
+        CreatePanel(
             ExtrasGrid,
-            "Infinite Jump",
-            95
+            "Infinite Jump"
         )
 
     InfinitePanel.LayoutOrder = 1
 
-    Checkbox(
+    CreateCheckbox(
         InfinitePanel,
         function(enabled)
 
@@ -1119,9 +1140,11 @@ function Page.Start(state)
                                 GetHumanoid()
 
                             if humanoid then
+
                                 humanoid:ChangeState(
                                     Enum.HumanoidStateType.Jumping
                                 )
+
                             end
 
                         end
@@ -1142,77 +1165,88 @@ function Page.Start(state)
     --==================================================
 
     local TeleportPanel =
-        ControlBox(
+        CreatePanel(
             ExtrasGrid,
-            "Click Teleport",
-            95
+            "Click Teleport"
         )
 
     TeleportPanel.LayoutOrder = 2
 
-    Checkbox(
+    CreateCheckbox(
         TeleportPanel,
         function(enabled)
 
-            if enabled then
-                print(
-                    "[Areteon] Click Teleport enabled"
-                )
-            else
-                print(
-                    "[Areteon] Click Teleport disabled"
-                )
-            end
+            print(
+                "[Areteon] Click Teleport:",
+                enabled
+            )
 
         end
     )
 
     --==================================================
-    -- PLAYER SECTION
+    -- PLAYER
     --==================================================
 
     local PlayerSection =
-        Section(
-            Scroll,
+        CreateSection(
+            Content,
             "Player"
         )
 
-    PlayerSection.LayoutOrder = 6
-
-    --==================================================
-    -- RESET / RESPAWN
-    --==================================================
+    PlayerSection.Position =
+        UDim2.new(
+            0,
+            0,
+            0,
+            460
+        )
 
     local PlayerGrid = Create("Frame", {
-        LayoutOrder = 7,
+
+        Position = UDim2.new(
+            0,
+            0,
+            0,
+            510
+        ),
 
         Size = UDim2.new(
             1,
-            -10,
             0,
-            50
-        ),
-
-        BackgroundTransparency = 1
-    }, Scroll)
-
-    Create("UIGridLayout", {
-        CellSize = UDim2.new(
-            0.5,
-            -5,
             0,
             45
         ),
 
-        CellPadding = UDim2.new(
-            0,
-            10,
-            0,
-            0
-        )
-    }, PlayerGrid)
+        BackgroundTransparency = 1
 
-    local ResetButton =
+    }, Content)
+
+    Create(
+        "UIGridLayout",
+        {
+            CellSize = UDim2.new(
+                0.5,
+                -5,
+                0,
+                45
+            ),
+
+            CellPadding = UDim2.new(
+                0,
+                10,
+                0,
+                0
+            )
+        },
+        PlayerGrid
+    )
+
+    --==================================================
+    -- RESET
+    --==================================================
+
+    local Reset =
         Create(
             "TextButton",
             {
@@ -1241,12 +1275,9 @@ function Page.Start(state)
             PlayerGrid
         )
 
-    Corner(
-        ResetButton,
-        7
-    )
+    Corner(Reset, 7)
 
-    ResetButton.MouseButton1Click:Connect(
+    Reset.MouseButton1Click:Connect(
         function()
 
             local humanoid =
@@ -1259,7 +1290,11 @@ function Page.Start(state)
         end
     )
 
-    local RespawnButton =
+    --==================================================
+    -- RESPAWN
+    --==================================================
+
+    local Respawn =
         Create(
             "TextButton",
             {
@@ -1288,12 +1323,9 @@ function Page.Start(state)
             PlayerGrid
         )
 
-    Corner(
-        RespawnButton,
-        7
-    )
+    Corner(Respawn, 7)
 
-    RespawnButton.MouseButton1Click:Connect(
+    Respawn.MouseButton1Click:Connect(
         function()
 
             LocalPlayer:LoadCharacter()
@@ -1302,8 +1334,10 @@ function Page.Start(state)
     )
 
     --==================================================
-    -- RETURN
+    -- RETURN PAGE
     --==================================================
+
+    PageFrame.Visible = true
 
     return PageFrame
 end
