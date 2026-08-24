@@ -1,787 +1,454 @@
-```lua
---==================================================
--- SCRIPT HUB - HUB.LUA
---==================================================
-
 local Hub = {}
 
---==================================================
--- START
---==================================================
-
 function Hub.Start(Data)
-
     Data = Data or {}
 
-    local AccessType =
-        Data.AccessType or "FREE"
+    local Players = game:GetService("Players")
+    local UIS = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
 
-    local Players =
-        game:GetService("Players")
+    local Player = Data.Player or Players.LocalPlayer
+    local PlayerGui = Player:WaitForChild("PlayerGui")
 
-    local Player =
-        Data.Player or Players.LocalPlayer
+    local AccessType = Data.AccessType or "FREE"
 
-    local PlayerGui =
-        Player:WaitForChild("PlayerGui")
-
-    --==================================================
-    -- MODULES
-    --==================================================
-
-    local Root = script.Parent
-
-    local Components =
-        require(Root.UI.Components)
-
-    local Drag =
-        require(Root.UI.Drag)
-
-    local Panel =
-        require(Root.UI.Panel)
-
-    local Speed =
-        require(Root.Scripts.Speed)
-
-    local Fly =
-        require(Root.Scripts.Fly)
-
-    local Noclip =
-        require(Root.Scripts.Noclip)
-
-    local UnlimitedJump =
-        require(Root.Scripts.UnlimitedJump)
-
-    local ClickTeleport =
-        require(Root.Scripts.ClickTeleport)
-
-    local ESP =
-        require(Root.Scripts.ESP)
+    -- Remove previous GUI
+    local old = PlayerGui:FindFirstChild("AreteonHub")
+    if old then
+        old:Destroy()
+    end
 
     --==================================================
-    -- SCREEN GUI
+    -- GUI
     --==================================================
 
-    local ScreenGui =
-        Instance.new("ScreenGui")
+    local Gui = Instance.new("ScreenGui")
+    Gui.Name = "AreteonHub"
+    Gui.ResetOnSpawn = false
+    Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    Gui.Parent = PlayerGui
 
-    ScreenGui.Name =
-        "ScriptHub"
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.fromOffset(650, 420)
+    Main.Position = UDim2.new(0.5, -325, 0.5, -210)
+    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    Main.BorderSizePixel = 0
+    Main.Parent = Gui
 
-    ScreenGui.ResetOnSpawn =
-        false
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
-    ScreenGui.ZIndexBehavior =
-        Enum.ZIndexBehavior.Sibling
-
-    ScreenGui.Parent =
-        PlayerGui
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(70, 70, 80)
+    Stroke.Parent = Main
 
     --==================================================
-    -- MAIN WINDOW
+    -- TITLE BAR
     --==================================================
 
-    local HubWindow =
-        Panel.Create(
-            ScreenGui,
-            "◉  SCRIPT HUB",
-            UDim2.fromOffset(850, 550)
-        )
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 45)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = Main
 
-    Drag.MakeDraggable(
-        HubWindow.Window,
-        HubWindow.TitleBar
-    )
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.fromOffset(15, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "◉  ARETEON"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TitleBar
+
+    --==================================================
+    -- DRAG
+    --==================================================
+
+    local dragging = false
+    local dragStart
+    local startPos
+
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+            dragging = true
+            dragStart = input.Position
+            startPos = Main.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch
+        ) then
+            local delta = input.Position - dragStart
+
+            Main.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
 
     --==================================================
     -- SIDEBAR
     --==================================================
 
-    local Sidebar =
-        Instance.new("Frame")
+    local Sidebar = Instance.new("Frame")
+    Sidebar.Size = UDim2.new(0, 140, 1, -45)
+    Sidebar.Position = UDim2.fromOffset(0, 45)
+    Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Sidebar.BorderSizePixel = 0
+    Sidebar.Parent = Main
 
-    Sidebar.Name =
-        "Sidebar"
+    local function Button(parent, text, position, size)
+        local b = Instance.new("TextButton")
+        b.Size = size or UDim2.new(1, -20, 0, 40)
+        b.Position = position or UDim2.fromOffset(10, 0)
+        b.BackgroundColor3 = Color3.fromRGB(38, 38, 46)
+        b.BorderSizePixel = 0
+        b.Text = text
+        b.TextColor3 = Color3.fromRGB(235, 235, 235)
+        b.TextSize = 14
+        b.Font = Enum.Font.Gotham
+        b.AutoButtonColor = true
+        b.Parent = parent
 
-    Sidebar.Size =
-        UDim2.new(
-            0,
-            150,
-            1,
-            -48
-        )
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
 
-    Sidebar.Position =
-        UDim2.fromOffset(0, 48)
-
-    Sidebar.BackgroundColor3 =
-        Components.Theme.Background
-
-    Sidebar.BorderSizePixel =
-        0
-
-    Sidebar.Parent =
-        HubWindow.Window
-
-    local SidebarLayout =
-        Instance.new("UIListLayout")
-
-    SidebarLayout.Padding =
-        UDim.new(0, 5)
-
-    SidebarLayout.HorizontalAlignment =
-        Enum.HorizontalAlignment.Center
-
-    SidebarLayout.SortOrder =
-        Enum.SortOrder.LayoutOrder
-
-    SidebarLayout.Parent =
-        Sidebar
-
-    local SidebarPadding =
-        Instance.new("UIPadding")
-
-    SidebarPadding.PaddingTop =
-        UDim.new(0, 15)
-
-    SidebarPadding.PaddingLeft =
-        UDim.new(0, 8)
-
-    SidebarPadding.PaddingRight =
-        UDim.new(0, 8)
-
-    SidebarPadding.Parent =
-        Sidebar
-
-    --==================================================
-    -- PAGE CONTAINER
-    --==================================================
-
-    local Pages =
-        Instance.new("Frame")
-
-    Pages.Name =
-        "Pages"
-
-    Pages.Size =
-        UDim2.new(
-            1,
-            -170,
-            1,
-            -68
-        )
-
-    Pages.Position =
-        UDim2.fromOffset(160, 58)
-
-    Pages.BackgroundTransparency =
-        1
-
-    Pages.Parent =
-        HubWindow.Window
-
-    --==================================================
-    -- PAGE CREATOR
-    --==================================================
-
-    local pageObjects = {}
-
-    local function CreatePage(Name)
-
-        local Page =
-            Instance.new("ScrollingFrame")
-
-        Page.Name =
-            Name
-
-        Page.Size =
-            UDim2.fromScale(1, 1)
-
-        Page.BackgroundTransparency =
-            1
-
-        Page.BorderSizePixel =
-            0
-
-        Page.ScrollBarThickness =
-            4
-
-        Page.CanvasSize =
-            UDim2.new(0, 0, 0, 0)
-
-        Page.Visible =
-            false
-
-        Page.Parent =
-            Pages
-
-        local Layout =
-            Instance.new("UIListLayout")
-
-        Layout.Padding =
-            UDim.new(0, 10)
-
-        Layout.SortOrder =
-            Enum.SortOrder.LayoutOrder
-
-        Layout.Parent =
-            Page
-
-        local Padding =
-            Instance.new("UIPadding")
-
-        Padding.PaddingRight =
-            UDim.new(0, 10)
-
-        Padding.PaddingBottom =
-            UDim.new(0, 10)
-
-        Padding.Parent =
-            Page
-
-        Layout:GetPropertyChangedSignal(
-            "AbsoluteContentSize"
-        ):Connect(function()
-
-            Page.CanvasSize =
-                UDim2.fromOffset(
-                    0,
-                    Layout.AbsoluteContentSize.Y + 20
-                )
-
-        end)
-
-        pageObjects[Name] =
-            Page
-
-        return Page
+        return b
     end
 
-    --==================================================
-    -- NAVIGATION
-    --==================================================
-
-    local function ShowPage(Name)
-
-        for _, Page in pairs(pageObjects) do
-            Page.Visible = false
-        end
-
-        if pageObjects[Name] then
-            pageObjects[Name].Visible = true
-        end
-    end
-
-    local function CreateNavButton(
-        Text,
-        PageName
+    local HomeButton = Button(
+        Sidebar,
+        "🏠  HOME",
+        UDim2.fromOffset(10, 15)
     )
 
-        local Button =
-            Components.Button(
-                Sidebar,
-                Text,
-                UDim2.new(
-                    1,
-                    -16,
-                    0,
-                    42
-                )
+    local ScriptsButton = Button(
+        Sidebar,
+        "📜  SCRIPTS",
+        UDim2.fromOffset(10, 60)
+    )
+
+    local SettingsButton = Button(
+        Sidebar,
+        "⚙  SETTINGS",
+        UDim2.fromOffset(10, 105)
+    )
+
+    --==================================================
+    -- PAGES
+    --==================================================
+
+    local Pages = Instance.new("Frame")
+    Pages.Size = UDim2.new(1, -155, 1, -60)
+    Pages.Position = UDim2.fromOffset(150, 55)
+    Pages.BackgroundTransparency = 1
+    Pages.Parent = Main
+
+    local function Page()
+        local p = Instance.new("ScrollingFrame")
+        p.Size = UDim2.fromScale(1, 1)
+        p.BackgroundTransparency = 1
+        p.BorderSizePixel = 0
+        p.ScrollBarThickness = 4
+        p.CanvasSize = UDim2.fromOffset(0, 0)
+        p.Visible = false
+        p.Parent = Pages
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 10)
+        layout.Parent = p
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingLeft = UDim.new(0, 10)
+        padding.PaddingRight = UDim.new(0, 10)
+        padding.PaddingBottom = UDim.new(0, 10)
+        padding.Parent = p
+
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            p.CanvasSize = UDim2.fromOffset(
+                0,
+                layout.AbsoluteContentSize.Y + 20
             )
+        end)
 
-        Button.MouseButton1Click:Connect(
-            function()
-                ShowPage(PageName)
-            end
-        )
+        return p
+    end
 
-        return Button
+    local Home = Page()
+    local Scripts = Page()
+    local Settings = Page()
+
+    local function Show(page)
+        Home.Visible = false
+        Scripts.Visible = false
+        Settings.Visible = false
+
+        page.Visible = true
+    end
+
+    HomeButton.MouseButton1Click:Connect(function()
+        Show(Home)
+    end)
+
+    ScriptsButton.MouseButton1Click:Connect(function()
+        Show(Scripts)
+    end)
+
+    SettingsButton.MouseButton1Click:Connect(function()
+        Show(Settings)
+    end)
+
+    --==================================================
+    -- LABEL
+    --==================================================
+
+    local function Label(parent, text, height)
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, 0, 0, height or 35)
+        l.BackgroundTransparency = 1
+        l.Text = text
+        l.TextColor3 = Color3.fromRGB(255, 255, 255)
+        l.TextSize = 20
+        l.Font = Enum.Font.GothamBold
+        l.TextXAlignment = Enum.TextXAlignment.Left
+        l.Parent = parent
+
+        return l
     end
 
     --==================================================
     -- HOME
     --==================================================
 
-    local Home =
-        CreatePage("Home")
+    Label(Home, "HOME")
 
-    local HomeTitle =
-        Components.Label(
-            Home,
-            "HOME",
-            UDim2.new(1, 0, 0, 35)
-        )
+    local Welcome = Instance.new("TextLabel")
+    Welcome.Size = UDim2.new(1, 0, 0, 60)
+    Welcome.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+    Welcome.Text =
+        "Welcome, " .. Player.DisplayName ..
+        "\nAccess: " .. tostring(AccessType)
+    Welcome.TextColor3 = Color3.fromRGB(235, 235, 235)
+    Welcome.TextSize = 15
+    Welcome.Font = Enum.Font.Gotham
+    Welcome.TextWrapped = true
+    Welcome.Parent = Home
 
-    HomeTitle.TextSize = 20
-    HomeTitle.Font =
-        Enum.Font.GothamBold
-
-    --==================================================
-    -- PROFILE
-    --==================================================
-
-    local Profile =
-        Components.Card(
-            Home,
-            UDim2.new(1, 0, 0, 100)
-        )
-
-    local Avatar =
-        Instance.new("ImageLabel")
-
-    Avatar.Size =
-        UDim2.fromOffset(70, 70)
-
-    Avatar.Position =
-        UDim2.fromOffset(15, 15)
-
-    Avatar.BackgroundTransparency =
-        1
-
-    local Image =
-        Players:GetUserThumbnailAsync(
-            Player.UserId,
-            Enum.ThumbnailType.HeadShot,
-            Enum.ThumbnailSize.Size100x100
-        )
-
-    Avatar.Image =
-        Image
-
-    Avatar.Parent =
-        Profile
-
-    Components.Label(
-        Profile,
-        Player.DisplayName,
-        UDim2.new(1, -110, 0, 30),
-        UDim2.fromOffset(100, 20)
-    )
-
-    Components.Label(
-        Profile,
-        "@" .. Player.Name,
-        UDim2.new(1, -110, 0, 25),
-        UDim2.fromOffset(100, 50)
-    )
-
-    Components.Label(
-        Profile,
-        "ID: " .. Player.UserId,
-        UDim2.new(1, -110, 0, 20),
-        UDim2.fromOffset(100, 75)
-    )
-
-    --==================================================
-    -- ACCESS STATUS
-    --==================================================
-
-    local KeyDropdown =
-        Components.Dropdown(
-            Home,
-            "⏱  KEY STATUS"
-        )
-
-    Components.Label(
-        KeyDropdown,
-        "Access: " .. tostring(AccessType),
-        UDim2.new(1, -20, 0, 25),
-        UDim2.fromOffset(10, 10)
-    )
-
-    --==================================================
-    -- OTHER HOME SECTIONS
-    --==================================================
-
-    Components.Dropdown(
-        Home,
-        "💬  DISCORD"
-    )
-
-    Components.Dropdown(
-        Home,
-        "ℹ  DETAILS"
-    )
-
-    Components.Dropdown(
-        Home,
-        "📖  INFO"
-    )
-
-    --==================================================
-    -- SCRIPTS PAGE
-    --==================================================
-
-    local ScriptsPage =
-        CreatePage("Scripts")
-
-    local ScriptsTitle =
-        Components.Label(
-            ScriptsPage,
-            "📜  SCRIPTS",
-            UDim2.new(1, 0, 0, 35)
-        )
-
-    ScriptsTitle.TextSize = 20
-    ScriptsTitle.Font =
-        Enum.Font.GothamBold
-
-    Components.Dropdown(
-        ScriptsPage,
-        "⚡  MOVEMENT"
-    )
+    Instance.new("UICorner", Welcome).CornerRadius = UDim.new(0, 8)
 
     --==================================================
     -- SPEED
     --==================================================
 
-    local SpeedCard =
-        Components.Card(
-            ScriptsPage,
-            UDim2.new(1, 0, 0, 125)
-        )
+    Label(Scripts, "📜  SCRIPTS")
 
-    Components.Label(
-        SpeedCard,
-        "Speed",
-        UDim2.new(1, -30, 0, 25),
-        UDim2.fromOffset(15, 5)
+    local SpeedFrame = Instance.new("Frame")
+    SpeedFrame.Size = UDim2.new(1, 0, 0, 100)
+    SpeedFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+    SpeedFrame.BorderSizePixel = 0
+    SpeedFrame.Parent = Scripts
+
+    Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 8)
+
+    local SpeedLabel = Instance.new("TextLabel")
+    SpeedLabel.Size = UDim2.new(0, 100, 0, 35)
+    SpeedLabel.Position = UDim2.fromOffset(10, 10)
+    SpeedLabel.BackgroundTransparency = 1
+    SpeedLabel.Text = "WalkSpeed"
+    SpeedLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+    SpeedLabel.TextSize = 14
+    SpeedLabel.Font = Enum.Font.Gotham
+    SpeedLabel.Parent = SpeedFrame
+
+    local SpeedInput = Instance.new("TextBox")
+    SpeedInput.Size = UDim2.fromOffset(100, 35)
+    SpeedInput.Position = UDim2.fromOffset(115, 10)
+    SpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    SpeedInput.BorderSizePixel = 0
+    SpeedInput.Text = "16"
+    SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SpeedInput.TextSize = 14
+    SpeedInput.Font = Enum.Font.Gotham
+    SpeedInput.ClearTextOnFocus = false
+    SpeedInput.Parent = SpeedFrame
+
+    Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 6)
+
+    local ApplySpeed = Button(
+        SpeedFrame,
+        "APPLY",
+        UDim2.fromOffset(225, 10),
+        UDim2.fromOffset(100, 35)
     )
 
-    local SpeedInput =
-        Components.Input(
-            SpeedCard,
-            "Speed",
-            "16"
-        )
-
-    SpeedInput.Size =
+    local DefaultSpeed = Button(
+        SpeedFrame,
+        "DEFAULT",
+        UDim2.fromOffset(335, 10),
         UDim2.fromOffset(100, 35)
+    )
 
-    SpeedInput.Position =
-        UDim2.fromOffset(15, 35)
+    local function SetSpeed(value)
+        local character = Player.Character
+        if not character then return end
 
-    local SpeedSlider =
-        Components.Slider(
-            SpeedCard,
-            1,
-            250,
-            16,
-            function(Value)
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = value
+        end
+    end
 
-                SpeedInput.Text =
-                    tostring(Value)
+    ApplySpeed.MouseButton1Click:Connect(function()
+        local value = tonumber(SpeedInput.Text)
 
-                Speed.SetSpeed(Value)
+        if value then
+            value = math.clamp(value, 1, 250)
+            SpeedInput.Text = tostring(value)
+            SetSpeed(value)
+        end
+    end)
 
-            end
-        )
-
-    SpeedSlider.Container.Size =
-        UDim2.new(1, -140, 0, 75)
-
-    SpeedSlider.Container.Position =
-        UDim2.fromOffset(125, 25)
-
-    local SpeedDefault =
-        Components.DefaultButton(
-            SpeedCard,
-            function()
-
-                SpeedInput.Text = "16"
-
-                SpeedSlider.Set(16)
-
-                Speed.SetSpeed(16)
-
-            end
-        )
-
-    SpeedDefault.Position =
-        UDim2.new(1, -115, 1, -42)
+    DefaultSpeed.MouseButton1Click:Connect(function()
+        SpeedInput.Text = "16"
+        SetSpeed(16)
+    end)
 
     --==================================================
     -- NOCLIP
     --==================================================
 
-    Components.Checkbox(
-        ScriptsPage,
-        "Noclip",
-        false,
-        function(Enabled)
+    local NoclipButton = Button(
+        Scripts,
+        "Noclip: OFF",
+        nil,
+        UDim2.new(1, 0, 0, 42)
+    )
 
-            if Enabled then
-                Noclip.Enable(Player)
-            else
-                Noclip.Disable(Player)
+    local Noclip = false
+
+    NoclipButton.MouseButton1Click:Connect(function()
+        Noclip = not Noclip
+
+        NoclipButton.Text =
+            "Noclip: " .. (Noclip and "ON" or "OFF")
+    end)
+
+    RunService.Stepped:Connect(function()
+        if not Noclip then return end
+
+        local character = Player.Character
+        if not character then return end
+
+        for _, object in ipairs(character:GetDescendants()) do
+            if object:IsA("BasePart") then
+                object.CanCollide = false
             end
-
         end
-    )
+    end)
 
     --==================================================
-    -- FLY
+    -- INFINITE JUMP
     --==================================================
 
-    Components.Checkbox(
-        ScriptsPage,
-        "Fly",
-        false,
-        function(Enabled)
+    local InfiniteButton = Button(
+        Scripts,
+        "Infinite Jump: OFF",
+        nil,
+        UDim2.new(1, 0, 0, 42)
+    )
 
-            if Enabled then
-                Fly.Enable(Player)
-            else
-                Fly.Disable(Player)
-            end
+    local InfiniteJump = false
 
+    InfiniteButton.MouseButton1Click:Connect(function()
+        InfiniteJump = not InfiniteJump
+
+        InfiniteButton.Text =
+            "Infinite Jump: " ..
+            (InfiniteJump and "ON" or "OFF")
+    end)
+
+    UIS.JumpRequest:Connect(function()
+        if not InfiniteJump then return end
+
+        local character = Player.Character
+        if not character then return end
+
+        local humanoid =
+            character:FindFirstChildOfClass("Humanoid")
+
+        if humanoid then
+            humanoid:ChangeState(
+                Enum.HumanoidStateType.Jumping
+            )
         end
-    )
-
-    --==================================================
-    -- UNLIMITED JUMP
-    --==================================================
-
-    Components.Checkbox(
-        ScriptsPage,
-        "Unlimited Jump",
-        false,
-        function(Enabled)
-
-            if Enabled then
-                UnlimitedJump.Enable(Player)
-            else
-                UnlimitedJump.Disable(Player)
-            end
-
-        end
-    )
-
-    --==================================================
-    -- CLICK TELEPORT
-    --==================================================
-
-    Components.Checkbox(
-        ScriptsPage,
-        "Click Teleport",
-        false,
-        function(Enabled)
-
-            if Enabled then
-                ClickTeleport.Enable()
-            else
-                ClickTeleport.Disable()
-            end
-
-        end
-    )
-
-    --==================================================
-    -- ESP
-    --==================================================
-
-    Components.Dropdown(
-        ScriptsPage,
-        "👁  VISUALS"
-    )
-
-    Components.Checkbox(
-        ScriptsPage,
-        "ESP",
-        false,
-        function(Enabled)
-
-            if Enabled then
-                ESP.Enable()
-            else
-                ESP.Disable()
-            end
-
-        end
-    )
-
-    Components.Checkbox(
-        ScriptsPage,
-        "ESP Name",
-        true,
-        function(Enabled)
-            ESP.SetName(Enabled)
-        end
-    )
-
-    Components.Checkbox(
-        ScriptsPage,
-        "ESP Distance",
-        true,
-        function(Enabled)
-            ESP.SetDistance(Enabled)
-        end
-    )
-
-    Components.Checkbox(
-        ScriptsPage,
-        "ESP Health",
-        true,
-        function(Enabled)
-            ESP.SetHealth(Enabled)
-        end
-    )
+    end)
 
     --==================================================
     -- SETTINGS
     --==================================================
 
-    local Settings =
-        CreatePage("Settings")
+    Label(Settings, "⚙  SETTINGS")
 
-    local SettingsTitle =
-        Components.Label(
-            Settings,
-            "⚙  SETTINGS",
-            UDim2.new(1, 0, 0, 35)
-        )
+    local Info = Instance.new("TextLabel")
+    Info.Size = UDim2.new(1, 0, 0, 80)
+    Info.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+    Info.Text =
+        "Areteon Script Hub\n" ..
+        "Access: " .. tostring(AccessType) ..
+        "\nPlayer: " .. Player.Name
+    Info.TextColor3 = Color3.fromRGB(235, 235, 235)
+    Info.TextSize = 14
+    Info.Font = Enum.Font.Gotham
+    Info.TextWrapped = true
+    Info.Parent = Settings
 
-    SettingsTitle.TextSize = 20
-    SettingsTitle.Font =
-        Enum.Font.GothamBold
-
-    Components.Dropdown(
-        Settings,
-        "🎨  APPEARANCE"
-    )
-
-    Components.Dropdown(
-        Settings,
-        "🖥  INTERFACE"
-    )
-
-    --==================================================
-    -- ADMIN PANEL
-    --==================================================
-
-    if AccessType == "ADMIN" then
-
-        Components.Dropdown(
-            Settings,
-            "🛡  ADMIN"
-        )
-
-        local AdminButton =
-            Components.Button(
-                Settings,
-                "🛡  ADMIN PANEL",
-                UDim2.new(1, 0, 0, 42)
-            )
-
-        AdminButton.MouseButton1Click:Connect(
-            function()
-
-                print(
-                    "[Admin] Admin Panel opened."
-                )
-
-                -- Connect your authorized
-                -- AdminPanel module here.
-
-            end
-        )
-
-    end
-
-    --==================================================
-    -- NAVIGATION BUTTONS
-    --==================================================
-
-    CreateNavButton(
-        "🏠  HOME",
-        "Home"
-    )
-
-    CreateNavButton(
-        "📜  SCRIPTS",
-        "Scripts"
-    )
-
-    CreateNavButton(
-        "⚙  SETTINGS",
-        "Settings"
-    )
-
-    --==================================================
-    -- DEFAULT PAGE
-    --==================================================
-
-    Home.Visible = true
+    Instance.new("UICorner", Info).CornerRadius = UDim.new(0, 8)
 
     --==================================================
     -- FLOATING TOGGLE
     --==================================================
 
-    local ToggleButton =
-        Instance.new("TextButton")
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.fromOffset(55, 55)
+    Toggle.Position = UDim2.fromOffset(20, 200)
+    Toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+    Toggle.BorderSizePixel = 0
+    Toggle.Text = "◉"
+    Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Toggle.TextSize = 22
+    Toggle.Font = Enum.Font.GothamBold
+    Toggle.Parent = Gui
 
-    ToggleButton.Name =
-        "HubToggle"
+    Instance.new("UICorner", Toggle).CornerRadius = UDim.new(1, 0)
 
-    ToggleButton.Size =
-        UDim2.fromOffset(55, 55)
+    Toggle.MouseButton1Click:Connect(function()
+        Main.Visible = not Main.Visible
+    end)
 
-    ToggleButton.Position =
-        UDim2.fromOffset(20, 200)
+    Show(Home)
 
-    ToggleButton.BackgroundColor3 =
-        Components.Theme.Card
-
-    ToggleButton.BorderSizePixel = 0
-
-    ToggleButton.Text = "◉"
-
-    ToggleButton.TextColor3 =
-        Components.Theme.Text
-
-    ToggleButton.TextSize = 22
-
-    ToggleButton.Font =
-        Enum.Font.GothamBold
-
-    ToggleButton.Parent =
-        ScreenGui
-
-    Components.Corner(
-        ToggleButton,
-        28
-    )
-
-    Components.Stroke(
-        ToggleButton
-    )
-
-    Drag.MakeDraggable(
-        ToggleButton
-    )
-
-    ToggleButton.MouseButton1Click:Connect(
-        function()
-
-            HubWindow.Window.Visible =
-                not HubWindow.Window.Visible
-
-        end
-    )
-
-    print(
-        "[ScriptHub] Loaded:",
-        AccessType
-    )
+    print("[Areteon] Hub loaded:", AccessType)
 
     return {
-        Gui = ScreenGui,
-        Window = HubWindow,
+        Gui = Gui,
+        Window = Main,
         AccessType = AccessType
     }
-
 end
 
 return Hub
-```
-
