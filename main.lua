@@ -1,157 +1,89 @@
---==================================================
--- MAIN.LUA
---==================================================
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
---==================================================
--- CONFIG
---==================================================
-
 local CONFIG = {
-    GetKeyURL =
-        "https://direct-link.net/8645104/ItnPcaJOPaKa",
-
-    -- Your own server verification endpoint.
-    VerifyURL =
-        "YOUR_SERVER_VERIFY_URL"
+    VerifyURL = "YOUR_SERVER_VERIFY_URL"
 }
 
---==================================================
--- STATE
---==================================================
-
-local Verified = false
-local AccessType = "NONE"
-
---==================================================
--- LOAD GITHUB MODULE
---==================================================
-
-local function LoadModule(URL)
-
-    local Success, Source = pcall(function()
-        return game:HttpGet(URL)
+local function LoadModule(url)
+    local ok, source = pcall(function()
+        return game:HttpGet(url)
     end)
 
-    if not Success then
-        return nil, "Failed to download module."
+    if not ok then
+        return nil, "Download failed: " .. tostring(source)
     end
 
-    local Loaded, Module = pcall(function()
-        return loadstring(Source)()
-    end)
+    local fn, err = loadstring(source)
 
-    if not Loaded then
-        return nil, "Failed to load module."
+    if not fn then
+        return nil, "Compile failed: " .. tostring(err)
     end
 
-    return Module
+    local success, result = pcall(fn)
+
+    if not success then
+        return nil, "Execution failed: " .. tostring(result)
+    end
+
+    return result
 end
 
---==================================================
--- KEY GUI
---==================================================
-
-local KeyGui, KeyGuiError = LoadModule(
-    "https://raw.githubusercontent.com/" ..
-    "jezz-lab/areteon/main/KeyGui.lua"
+local KeyGui, err = LoadModule(
+    "https://raw.githubusercontent.com/jezz-lab/areteon/main/keyGui.lua"
 )
 
 if not KeyGui then
-    warn("[KeyGui] " .. tostring(KeyGuiError))
+    warn("[Areteon] KeyGui: " .. tostring(err))
     return
 end
 
---==================================================
--- HUB
---==================================================
-
-local Hub, HubError = LoadModule(
-    "https://raw.githubusercontent.com/" ..
-    "jezz-lab/areteon/main/Hub.lua"
+local Hub, hubErr = LoadModule(
+    "https://raw.githubusercontent.com/jezz-lab/areteon/main/hub.lua"
 )
 
 if not Hub then
-    warn("[Hub] " .. tostring(HubError))
+    warn("[Areteon] Hub: " .. tostring(hubErr))
     return
 end
 
---==================================================
--- VERIFY
---==================================================
-
-local function VerifyKey(Key)
-
-    if not Key or Key == "" then
+local function VerifyKey(key)
+    if key == "" then
         return false, "Enter a key first."
     end
 
-    -- Perform verification on your server.
-    --
-    -- Do NOT put a lifetime/admin credential
-    -- inside this client-side file.
+    if CONFIG.VerifyURL == "YOUR_SERVER_VERIFY_URL" then
+        return false, "Verification URL is not configured."
+    end
 
-    local Success, Response = pcall(function()
+    local HttpService = game:GetService("HttpService")
 
+    local ok, response = pcall(function()
         return game:HttpGet(
             CONFIG.VerifyURL ..
-            "?key=" ..
-            game:GetService("HttpService"):UrlEncode(Key) ..
-            "&userId=" ..
-            tostring(Player.UserId)
+            "?key=" .. HttpService:UrlEncode(key) ..
+            "&userId=" .. tostring(Player.UserId)
         )
-
     end)
 
-    if not Success then
+    if not ok then
         return false, "Verification request failed."
     end
 
-    if Response ~= "VALID" then
+    if response ~= "VALID" then
         return false, "Invalid or expired key."
     end
-
-    Verified = true
-    AccessType = "NORMAL"
 
     return true, "Key verified!"
 end
 
---==================================================
--- START HUB
---==================================================
-
-local function StartHub()
-
-    if not Verified then
-        return
-    end
-
-    Hub.Start({
-        Player = Player,
-        AccessType = AccessType
-    })
-end
-
---==================================================
--- KEY GUI
---==================================================
-
 KeyGui.Create({
-
-    GetKeyURL = CONFIG.GetKeyURL,
-
-    OnVerify = function(Key)
-
-        local Success, Message =
-            VerifyKey(Key)
-
-        return Success, Message
-    end,
+    OnVerify = VerifyKey,
 
     OnSuccess = function()
-        StartHub()
+        Hub.Start({
+            Player = Player,
+            AccessType = "NORMAL"
+        })
     end
 })
