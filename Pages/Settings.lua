@@ -5,11 +5,12 @@
 local Settings = {}
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
 --==================================================
--- DEFAULT CONFIG
+-- DEFAULT THEME
 --==================================================
 
 Settings.DefaultTheme = {
@@ -29,15 +30,12 @@ Settings.DefaultSettings = {
 --==================================================
 
 local function Create(className, properties, parent)
-
     local object = Instance.new(className)
 
     for property, value in pairs(properties or {}) do
-
         pcall(function()
             object[property] = value
         end)
-
     end
 
     object.Parent = parent
@@ -46,54 +44,114 @@ local function Create(className, properties, parent)
 end
 
 local function Corner(object, radius)
-
     local corner = Instance.new("UICorner")
-
-    corner.CornerRadius =
-        UDim.new(0, radius or 8)
-
+    corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = object
+end
 
+local function ClampColor(value)
+    return math.clamp(
+        tonumber(value) or 0,
+        0,
+        255
+    )
 end
 
 --==================================================
--- COLOR BUTTON
+-- COLOR PICKER
 --==================================================
 
-local function CreateColorRow(
-    parent,
-    name,
+local function OpenColorPicker(
+    state,
+    colorName,
     currentColor,
-    onChanged
+    onApply
 )
 
-    local Row =
+    if state.ColorPicker then
+        state.ColorPicker:Destroy()
+        state.ColorPicker = nil
+    end
+
+    local Gui = state.Gui
+
+    if not Gui then
+        return
+    end
+
+    local Picker =
         Create(
             "Frame",
             {
-                Size =
-                    UDim2.new(1, 0, 0, 42),
+                Name = "ColorPicker",
 
-                BackgroundTransparency = 1
+                AnchorPoint =
+                    Vector2.new(0.5, 0.5),
+
+                Position =
+                    UDim2.new(
+                        0.5,
+                        0,
+                        0.5,
+                        0
+                    ),
+
+                Size =
+                    UDim2.new(
+                        0,
+                        320,
+                        0,
+                        330
+                    ),
+
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        25,
+                        25,
+                        32
+                    ),
+
+                BorderSizePixel = 0,
+
+                ZIndex = 100
             },
-            parent
+            Gui
         )
+
+    Corner(Picker, 10)
+
+    state.ColorPicker = Picker
+
+    --==================================================
+    -- TITLE
+    --==================================================
 
     Create(
         "TextLabel",
         {
             Position =
-                UDim2.new(0, 10, 0, 0),
+                UDim2.new(
+                    0,
+                    15,
+                    0,
+                    10
+                ),
 
             Size =
-                UDim2.new(1, -65, 1, 0),
+                UDim2.new(
+                    1,
+                    -30,
+                    0,
+                    30
+                ),
 
             BackgroundTransparency = 1,
 
             Font =
-                Enum.Font.GothamMedium,
+                Enum.Font.GothamBold,
 
-            Text = name,
+            Text =
+                "Change " .. colorName,
 
             TextColor3 =
                 Color3.fromRGB(
@@ -102,123 +160,151 @@ local function CreateColorRow(
                     255
                 ),
 
-            TextSize = 13,
+            TextSize = 16,
 
             TextXAlignment =
-                Enum.TextXAlignment.Left
+                Enum.TextXAlignment.Left,
+
+            ZIndex = 101
         },
-        Row
+        Picker
     )
 
-    local ColorButton =
+    --==================================================
+    -- PREVIEW
+    --==================================================
+
+    local Preview =
         Create(
-            "TextButton",
+            "Frame",
             {
                 Position =
-                    UDim2.new(1, -50, 0, 6),
+                    UDim2.new(
+                        0,
+                        15,
+                        0,
+                        48
+                    ),
 
                 Size =
-                    UDim2.new(0, 40, 0, 30),
+                    UDim2.new(
+                        1,
+                        -30,
+                        0,
+                        45
+                    ),
 
                 BackgroundColor3 =
                     currentColor,
 
                 BorderSizePixel = 0,
 
-                Text = ""
+                ZIndex = 101
             },
-            Row
+            Picker
         )
 
-    Corner(ColorButton, 6)
+    Corner(Preview, 7)
 
-    ColorButton.MouseButton1Click:Connect(
-        function()
+    --==================================================
+    -- RGB
+    --==================================================
 
-            -- Simple RGB picker window.
-            -- The actual picker can be replaced
-            -- with your preferred picker later.
+    local R =
+        math.floor(
+            currentColor.R * 255
+        )
 
-            local oldPicker =
-                parent.Parent.Parent.Parent:
-                    FindFirstChild(
-                        "ColorPicker"
-                    )
+    local G =
+        math.floor(
+            currentColor.G * 255
+        )
 
-            if oldPicker then
-                oldPicker:Destroy()
-            end
+    local B =
+        math.floor(
+            currentColor.B * 255
+        )
 
-            local Picker =
-                Create(
-                    "Frame",
-                    {
-                        Name = "ColorPicker",
+    local function CreateRGBInput(
+        name,
+        value,
+        y
+    )
 
-                        AnchorPoint =
-                            Vector2.new(
-                                0.5,
-                                0.5
-                            ),
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        20,
+                        0,
+                        y
+                    ),
 
-                        Position =
-                            UDim2.new(
-                                0.5,
-                                0,
-                                0.5,
-                                0
-                            ),
+                Size =
+                    UDim2.new(
+                        0,
+                        25,
+                        0,
+                        30
+                    ),
 
-                        Size =
-                            UDim2.new(
-                                0,
-                                300,
-                                0,
-                                250
-                            ),
+                BackgroundTransparency = 1,
 
-                        BackgroundColor3 =
-                            Color3.fromRGB(
-                                25,
-                                25,
-                                32
-                            ),
+                Font =
+                    Enum.Font.GothamBold,
 
-                        BorderSizePixel = 0,
+                Text = name,
 
-                        ZIndex = 50
-                    },
-                    parent.Parent.Parent.Parent
-                )
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
 
-            Corner(Picker, 10)
+                TextSize = 12,
 
+                ZIndex = 101
+            },
+            Picker
+        )
+
+        local Input =
             Create(
-                "TextLabel",
+                "TextBox",
                 {
                     Position =
                         UDim2.new(
                             0,
-                            15,
+                            50,
                             0,
-                            10
+                            y
                         ),
 
                     Size =
                         UDim2.new(
                             1,
-                            -30,
+                            -70,
                             0,
                             30
                         ),
 
-                    BackgroundTransparency = 1,
+                    BackgroundColor3 =
+                        Color3.fromRGB(
+                            35,
+                            35,
+                            43
+                        ),
+
+                    BorderSizePixel = 0,
 
                     Font =
-                        Enum.Font.GothamBold,
+                        Enum.Font.Gotham,
 
                     Text =
-                        "Change " .. name,
+                        tostring(value),
 
                     TextColor3 =
                         Color3.fromRGB(
@@ -227,241 +313,383 @@ local function CreateColorRow(
                             255
                         ),
 
-                    TextSize = 16,
+                    TextSize = 12,
 
-                    ZIndex = 51
+                    ClearTextOnFocus = false,
+
+                    ZIndex = 101
                 },
                 Picker
             )
 
+        Corner(Input, 6)
+
+        return Input
+    end
+
+    local RBox =
+        CreateRGBInput(
+            "R",
+            R,
+            105
+        )
+
+    local GBox =
+        CreateRGBInput(
+            "G",
+            G,
+            145
+        )
+
+    local BBox =
+        CreateRGBInput(
+            "B",
+            B,
+            185
+        )
+
+    --==================================================
+    -- UPDATE PREVIEW
+    --==================================================
+
+    local function UpdatePreview()
+
+        local r =
+            ClampColor(RBox.Text)
+
+        local g =
+            ClampColor(GBox.Text)
+
+        local b =
+            ClampColor(BBox.Text)
+
+        Preview.BackgroundColor3 =
+            Color3.fromRGB(
+                r,
+                g,
+                b
+            )
+    end
+
+    RBox:GetPropertyChangedSignal("Text"):
+        Connect(UpdatePreview)
+
+    GBox:GetPropertyChangedSignal("Text"):
+        Connect(UpdatePreview)
+
+    BBox:GetPropertyChangedSignal("Text"):
+        Connect(UpdatePreview)
+
+    --==================================================
+    -- APPLY
+    --==================================================
+
+    local Apply =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        20,
+                        0,
+                        240
+                    ),
+
+                Size =
+                    UDim2.new(
+                        0,
+                        130,
+                        0,
+                        38
+                    ),
+
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        45,
+                        45,
+                        58
+                    ),
+
+                BorderSizePixel = 0,
+
+                Font =
+                    Enum.Font.GothamBold,
+
+                Text = "Apply",
+
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
+
+                TextSize = 12,
+
+                ZIndex = 101
+            },
+            Picker
+        )
+
+    Corner(Apply, 7)
+
+    Apply.MouseButton1Click:Connect(
+        function()
+
             local r =
-                math.floor(
-                    currentColor.R * 255
-                )
+                ClampColor(RBox.Text)
 
             local g =
-                math.floor(
-                    currentColor.G * 255
-                )
+                ClampColor(GBox.Text)
 
             local b =
-                math.floor(
-                    currentColor.B * 255
-                )
+                ClampColor(BBox.Text)
 
-            local function CreateInput(
-                label,
-                value,
-                y
-            )
-
-                Create(
-                    "TextLabel",
-                    {
-                        Position =
-                            UDim2.new(
-                                0,
-                                20,
-                                0,
-                                y
-                            ),
-
-                        Size =
-                            UDim2.new(
-                                0,
-                                30,
-                                0,
-                                30
-                            ),
-
-                        BackgroundTransparency = 1,
-
-                        Font =
-                            Enum.Font.GothamBold,
-
-                        Text = label,
-
-                        TextColor3 =
-                            Color3.fromRGB(
-                                255,
-                                255,
-                                255
-                            ),
-
-                        TextSize = 13,
-
-                        ZIndex = 51
-                    },
-                    Picker
-                )
-
-                local Input =
-                    Create(
-                        "TextBox",
-                        {
-                            Position =
-                                UDim2.new(
-                                    0,
-                                    55,
-                                    0,
-                                    y
-                                ),
-
-                            Size =
-                                UDim2.new(
-                                    0,
-                                    200,
-                                    0,
-                                    30
-                                ),
-
-                            BackgroundColor3 =
-                                Color3.fromRGB(
-                                    35,
-                                    35,
-                                    43
-                                ),
-
-                            BorderSizePixel = 0,
-
-                            Font =
-                                Enum.Font.Gotham,
-
-                            Text =
-                                tostring(value),
-
-                            TextColor3 =
-                                Color3.fromRGB(
-                                    255,
-                                    255,
-                                    255
-                                ),
-
-                            TextSize = 12,
-
-                            ClearTextOnFocus = false,
-
-                            ZIndex = 51
-                        },
-                        Picker
-                    )
-
-                Corner(Input, 6)
-
-                return Input
-            end
-
-            local R =
-                CreateInput(
-                    "R",
+            local newColor =
+                Color3.fromRGB(
                     r,
-                    50
-                )
-
-            local G =
-                CreateInput(
-                    "G",
                     g,
-                    90
+                    b
                 )
 
-            local B =
-                CreateInput(
-                    "B",
-                    b,
-                    130
-                )
+            onApply(newColor)
 
-            local Apply =
-                Create(
-                    "TextButton",
-                    {
-                        Position =
-                            UDim2.new(
-                                0,
-                                20,
-                                0,
-                                180
-                            ),
+            Picker:Destroy()
 
-                        Size =
-                            UDim2.new(
-                                0,
-                                120,
-                                0,
-                                35
-                            ),
+            state.ColorPicker = nil
 
-                        BackgroundColor3 =
-                            Color3.fromRGB(
-                                45,
-                                45,
-                                58
-                            ),
+        end
+    )
 
-                        BorderSizePixel = 0,
+    --==================================================
+    -- CANCEL
+    --==================================================
 
-                        Font =
-                            Enum.Font.GothamBold,
+    local Cancel =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        165,
+                        0,
+                        240
+                    ),
 
-                        Text = "Apply",
+                Size =
+                    UDim2.new(
+                        0,
+                        130,
+                        0,
+                        38
+                    ),
 
-                        TextColor3 =
-                            Color3.fromRGB(
-                                255,
-                                255,
-                                255
-                            ),
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        35,
+                        35,
+                        43
+                    ),
 
-                        TextSize = 12,
+                BorderSizePixel = 0,
 
-                        ZIndex = 51
-                    },
-                    Picker
-                )
+                Font =
+                    Enum.Font.GothamBold,
 
-            Corner(Apply, 7)
+                Text = "Cancel",
 
-            Apply.MouseButton1Click:Connect(
-                function()
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
 
-                    local newR =
-                        math.clamp(
-                            tonumber(R.Text)
-                                or r,
-                            0,
-                            255
-                        )
+                TextSize = 12,
 
-                    local newG =
-                        math.clamp(
-                            tonumber(G.Text)
-                                or g,
-                            0,
-                            255
-                        )
+                ZIndex = 101
+            },
+            Picker
+        )
 
-                    local newB =
-                        math.clamp(
-                            tonumber(B.Text)
-                                or b,
-                            0,
-                            255
-                        )
+    Corner(Cancel, 7)
 
-                    local newColor =
-                        Color3.fromRGB(
-                            newR,
-                            newG,
-                            newB
-                        )
+    Cancel.MouseButton1Click:Connect(
+        function()
 
-                    ColorButton.BackgroundColor3 =
+            Picker:Destroy()
+
+            state.ColorPicker = nil
+
+        end
+    )
+
+end
+
+--==================================================
+-- APPLY THEME
+--==================================================
+
+local function ApplyTheme(state)
+
+    local Theme = state.Theme
+
+    if not Theme then
+        return
+    end
+
+    -- Main hub background
+
+    if state.Main then
+
+        state.Main.BackgroundColor3 =
+            Theme.Background
+
+        state.Main.BackgroundTransparency =
+            state.Settings.BackgroundTransparency
+
+    end
+
+    -- Sidebar
+
+    if state.Sidebar then
+
+        state.Sidebar.BackgroundColor3 =
+            Theme.Background
+
+    end
+
+    -- Top bar
+
+    if state.TopBar then
+
+        state.TopBar.BackgroundColor3 =
+            Theme.Panel
+
+    end
+
+    -- IMPORTANT:
+    -- Floating icon is intentionally
+    -- NOT modified here.
+
+end
+
+--==================================================
+-- COLOR ROW
+--==================================================
+
+local function CreateColorRow(
+    state,
+    parent,
+    name,
+    color
+)
+
+    local Row =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        38
+                    ),
+
+                BackgroundTransparency = 1
+            },
+            parent
+        )
+
+    local Label =
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        10,
+                        0,
+                        0
+                    ),
+
+                Size =
+                    UDim2.new(
+                        1,
+                        -70,
+                        1,
+                        0
+                    ),
+
+                BackgroundTransparency = 1,
+
+                Font =
+                    Enum.Font.GothamMedium,
+
+                Text = name,
+
+                TextColor3 =
+                    state.Theme.Primary,
+
+                TextSize = 12,
+
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            Row
+        )
+
+    local Preview =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        1,
+                        -55,
+                        0,
+                        5
+                    ),
+
+                Size =
+                    UDim2.new(
+                        0,
+                        40,
+                        0,
+                        28
+                    ),
+
+                BackgroundColor3 =
+                    color,
+
+                BorderSizePixel = 0,
+
+                Text = ""
+            },
+            Row
+        )
+
+    Corner(Preview, 6)
+
+    Preview.MouseButton1Click:Connect(
+        function()
+
+            OpenColorPicker(
+                state,
+                name,
+                state.Theme[name],
+                function(newColor)
+
+                    state.Theme[name] =
                         newColor
 
-                    onChanged(newColor)
+                    Preview.BackgroundColor3 =
+                        newColor
 
-                    Picker:Destroy()
+                    ApplyTheme(state)
 
                 end
             )
@@ -473,46 +701,151 @@ local function CreateColorRow(
 end
 
 --==================================================
--- APPLY THEME
+-- DROPDOWN
 --==================================================
 
-local function ApplyTheme(state)
+local function CreateDropdown(
+    state,
+    parent,
+    title,
+    height
+)
 
-    local theme =
-        state.Theme
+    local Box =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        height
+                    ),
 
-    if not theme then
-        return
-    end
+                BackgroundColor3 =
+                    state.Theme.Panel,
 
-    local Main =
-        state.Main
+                BorderSizePixel = 0,
 
-    if Main then
+                ClipsDescendants = true
+            },
+            parent
+        )
 
-        Main.BackgroundColor3 =
-            theme.Background
+    Corner(Box, 10)
 
-        Main.BackgroundTransparency =
-            state.Settings.BackgroundTransparency
+    local Header =
+        Create(
+            "TextButton",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        42
+                    ),
 
-    end
+                BackgroundTransparency = 1,
 
-    if state.Sidebar then
+                Font =
+                    Enum.Font.GothamBold,
 
-        state.Sidebar.BackgroundColor3 =
-            theme.Background
+                Text =
+                    "^  " .. title,
 
-    end
+                TextColor3 =
+                    state.Theme.Primary,
 
-    if state.TopBar then
+                TextSize = 14,
 
-        state.TopBar.BackgroundColor3 =
-            theme.Panel
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            Box
+        )
 
-    end
+    Create(
+        "UIPadding",
+        {
+            PaddingLeft =
+                UDim.new(
+                    0,
+                    15
+                )
+        },
+        Header
+    )
 
-    -- Floating icon deliberately NOT changed.
+    local Content =
+        Create(
+            "Frame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        10,
+                        0,
+                        45
+                    ),
+
+                Size =
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        height - 50
+                    ),
+
+                BackgroundTransparency = 1
+            },
+            Box
+        )
+
+    local expanded = true
+
+    Header.MouseButton1Click:Connect(
+        function()
+
+            expanded = not expanded
+
+            if expanded then
+
+                Header.Text =
+                    "^  " .. title
+
+                Box.Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        height
+                    )
+
+                Content.Visible = true
+
+            else
+
+                Header.Text =
+                    "v  " .. title
+
+                Box.Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        42
+                    )
+
+                Content.Visible = false
+
+            end
+
+        end
+    )
+
+    return Box, Content
 end
 
 --==================================================
@@ -524,7 +857,8 @@ function Settings.Start(state)
     if not state or not state.Content then
 
         warn(
-            "[Areteon] Settings: Content missing."
+            "[Areteon] Settings: " ..
+            "state.Content is missing."
         )
 
         return nil
@@ -532,7 +866,7 @@ function Settings.Start(state)
     end
 
     --==================================================
-    -- INITIAL STATE
+    -- STATE
     --==================================================
 
     state.Theme =
@@ -564,7 +898,7 @@ function Settings.Start(state)
                         1,
                         -20,
                         0,
-                        800
+                        900
                     ),
 
                 BackgroundTransparency = 1,
@@ -618,10 +952,10 @@ function Settings.Start(state)
     )
 
     --==================================================
-    -- COLORS SECTION
+    -- DROPDOWN CONTAINER
     --==================================================
 
-    local Colors =
+    local List =
         Create(
             "Frame",
             {
@@ -638,18 +972,88 @@ function Settings.Start(state)
                         1,
                         -30,
                         0,
-                        300
+                        800
                     ),
 
-                BackgroundColor3 =
-                    state.Theme.Panel,
-
-                BorderSizePixel = 0
+                BackgroundTransparency = 1
             },
             Page
         )
 
-    Corner(Colors, 10)
+    local Layout =
+        Create(
+            "UIListLayout",
+            {
+                Padding =
+                    UDim.new(
+                        0,
+                        10
+                    ),
+
+                SortOrder =
+                    Enum.SortOrder.LayoutOrder
+            },
+            List
+        )
+
+    --==================================================
+    -- COLORS
+    --==================================================
+
+    local ColorsBox, ColorsContent =
+        CreateDropdown(
+            state,
+            List,
+            "Colors",
+            260
+        )
+
+    CreateColorRow(
+        state,
+        ColorsContent,
+        "Background",
+        state.Theme.Background
+    )
+
+    CreateColorRow(
+        state,
+        ColorsContent,
+        "Primary",
+        state.Theme.Primary
+    )
+
+    CreateColorRow(
+        state,
+        ColorsContent,
+        "Secondary",
+        state.Theme.Secondary
+    )
+
+    CreateColorRow(
+        state,
+        ColorsContent,
+        "Buttons",
+        state.Theme.Buttons
+    )
+
+    CreateColorRow(
+        state,
+        ColorsContent,
+        "Panel",
+        state.Theme.Panel
+    )
+
+    --==================================================
+    -- GENERAL
+    --==================================================
+
+    local GeneralBox, GeneralContent =
+        CreateDropdown(
+            state,
+            List,
+            "General",
+            155
+        )
 
     Create(
         "TextLabel",
@@ -657,15 +1061,15 @@ function Settings.Start(state)
             Position =
                 UDim2.new(
                     0,
-                    15,
+                    5,
                     0,
-                    10
+                    5
                 ),
 
             Size =
                 UDim2.new(
-                    1,
-                    -30,
+                    0.55,
+                    0,
                     0,
                     30
                 ),
@@ -673,276 +1077,29 @@ function Settings.Start(state)
             BackgroundTransparency = 1,
 
             Font =
-                Enum.Font.GothamBold,
+                Enum.Font.GothamMedium,
 
-            Text = "Colors",
+            Text =
+                "Background Transparency",
 
             TextColor3 =
                 state.Theme.Primary,
 
-            TextSize = 15,
+            TextSize = 12,
 
             TextXAlignment =
                 Enum.TextXAlignment.Left
         },
-        Colors
+        GeneralContent
     )
 
-    local ColorList =
-        Create(
-            "Frame",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        10,
-                        0,
-                        48
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -20,
-                        0,
-                        240
-                    ),
-
-                BackgroundTransparency = 1
-            },
-            Colors
-        )
-
-    Create(
-        "UIListLayout",
-        {
-            Padding =
-                UDim.new(
-                    0,
-                    2
-                ),
-
-            SortOrder =
-                Enum.SortOrder.LayoutOrder
-        },
-        ColorList
-    )
-
-    local function ChangeColor(name, color)
-
-        state.Theme[name] = color
-
-        ApplyTheme(state)
-
-    end
-
-    CreateColorRow(
-        ColorList,
-        "Background",
-        state.Theme.Background,
-        function(color)
-            ChangeColor(
-                "Background",
-                color
-            )
-        end
-    )
-
-    CreateColorRow(
-        ColorList,
-        "Primary",
-        state.Theme.Primary,
-        function(color)
-            ChangeColor(
-                "Primary",
-                color
-            )
-        end
-    )
-
-    CreateColorRow(
-        ColorList,
-        "Secondary",
-        state.Theme.Secondary,
-        function(color)
-            ChangeColor(
-                "Secondary",
-                color
-            )
-        end
-    )
-
-    CreateColorRow(
-        ColorList,
-        "Buttons",
-        state.Theme.Buttons,
-        function(color)
-            ChangeColor(
-                "Buttons",
-                color
-            )
-        end
-    )
-
-    CreateColorRow(
-        ColorList,
-        "Panel",
-        state.Theme.Panel,
-        function(color)
-            ChangeColor(
-                "Panel",
-                color
-            )
-        end
-    )
-
-    --==================================================
-    -- GENERAL
-    --==================================================
-
-    local General =
-        Create(
-            "Frame",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        15,
-                        0,
-                        380
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -30,
-                        0,
-                        150
-                    ),
-
-                BackgroundColor3 =
-                    state.Theme.Panel,
-
-                BorderSizePixel = 0
-            },
-            Page
-        )
-
-    Corner(General, 10)
-
-    local GeneralButton =
-        Create(
-            "TextButton",
-            {
-                Size =
-                    UDim2.new(
-                        1,
-                        0,
-                        0,
-                        42
-                    ),
-
-                BackgroundTransparency = 1,
-
-                Font =
-                    Enum.Font.GothamBold,
-
-                Text = "▼  General",
-
-                TextColor3 =
-                    state.Theme.Primary,
-
-                TextSize = 14,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            General
-        )
-
-    Create(
-        "UIPadding",
-        {
-            PaddingLeft =
-                UDim.new(
-                    0,
-                    15
-                )
-        },
-        GeneralButton
-    )
-
-    local GeneralContent =
-        Create(
-            "Frame",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        10,
-                        0,
-                        45
-                    ),
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -20,
-                        0,
-                        95
-                    ),
-
-                BackgroundTransparency = 1
-            },
-            General
-        )
-
-    local TransparencyLabel =
-        Create(
-            "TextLabel",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        5,
-                        0,
-                        5
-                    ),
-
-                Size =
-                    UDim2.new(
-                        0.5,
-                        0,
-                        0,
-                        30
-                    ),
-
-                BackgroundTransparency = 1,
-
-                Font =
-                    Enum.Font.GothamMedium,
-
-                Text =
-                    "Background Transparency",
-
-                TextColor3 =
-                    state.Theme.Primary,
-
-                TextSize = 12,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            GeneralContent
-        )
-
-    local TransparencyBox =
+    local Transparency =
         Create(
             "TextBox",
             {
                 Position =
                     UDim2.new(
-                        0.55,
+                        0.58,
                         0,
                         0,
                         3
@@ -950,7 +1107,7 @@ function Settings.Start(state)
 
                 Size =
                     UDim2.new(
-                        0.4,
+                        0.38,
                         0,
                         0,
                         32
@@ -981,55 +1138,35 @@ function Settings.Start(state)
             GeneralContent
         )
 
-    Corner(TransparencyBox, 6)
+    Corner(Transparency, 6)
 
-    TransparencyBox.FocusLost:Connect(
+    Transparency.FocusLost:Connect(
         function()
 
             local value =
                 tonumber(
-                    TransparencyBox.Text
+                    Transparency.Text
                 )
 
-            if value then
-
-                value =
-                    math.clamp(
-                        value,
-                        0,
-                        100
-                    )
-
-                state.Settings
-                    .BackgroundTransparency =
-                    value / 100
-
-                TransparencyBox.Text =
-                    tostring(value)
-
-                ApplyTheme(state)
-
+            if not value then
+                return
             end
 
-        end
-    )
+            value =
+                math.clamp(
+                    value,
+                    0,
+                    100
+                )
 
-    GeneralButton.MouseButton1Click:Connect(
-        function()
+            state.Settings
+                .BackgroundTransparency =
+                value / 100
 
-            local open =
-                GeneralContent.Visible
+            Transparency.Text =
+                tostring(value)
 
-            GeneralContent.Visible =
-                not open
-
-            if open then
-                GeneralButton.Text =
-                    "▶  General"
-            else
-                GeneralButton.Text =
-                    "▼  General"
-            end
+            ApplyTheme(state)
 
         end
     )
@@ -1038,107 +1175,14 @@ function Settings.Start(state)
     -- ADMIN PANEL
     --==================================================
 
-    local AdminPanel
-
     if state.IsAdmin then
 
-        AdminPanel =
-            Create(
-                "Frame",
-                {
-                    Position =
-                        UDim2.new(
-                            0,
-                            15,
-                            0,
-                            545
-                        ),
-
-                    Size =
-                        UDim2.new(
-                            1,
-                            -30,
-                            0,
-                            300
-                        ),
-
-                    BackgroundColor3 =
-                        state.Theme.Panel,
-
-                    BorderSizePixel = 0
-                },
-                Page
-            )
-
-        Corner(AdminPanel, 10)
-
-        local AdminButton =
-            Create(
-                "TextButton",
-                {
-                    Size =
-                        UDim2.new(
-                            1,
-                            0,
-                            0,
-                            42
-                        ),
-
-                    BackgroundTransparency = 1,
-
-                    Font =
-                        Enum.Font.GothamBold,
-
-                    Text = "▶  Admin Panel",
-
-                    TextColor3 =
-                        state.Theme.Primary,
-
-                    TextSize = 14,
-
-                    TextXAlignment =
-                        Enum.TextXAlignment.Left
-                },
-                AdminPanel
-            )
-
-        Create(
-            "UIPadding",
-            {
-                PaddingLeft =
-                    UDim.new(
-                        0,
-                        15
-                    )
-            },
-            AdminButton
-        )
-
-        local AdminContent =
-            Create(
-                "Frame",
-                {
-                    Position =
-                        UDim2.new(
-                            0,
-                            10,
-                            0,
-                            45
-                        ),
-
-                    Size =
-                        UDim2.new(
-                            1,
-                            -20,
-                            0,
-                            240
-                        ),
-
-                    BackgroundTransparency = 1,
-
-                    Visible = false
-                },
-                AdminPanel
+        local AdminBox, AdminContent =
+            CreateDropdown(
+                state,
+                List,
+                "Admin Panel",
+                250
             )
 
         Create(
@@ -1182,62 +1226,235 @@ function Settings.Start(state)
             AdminContent
         )
 
+        local PlayerList =
+            Create(
+                "ScrollingFrame",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            5,
+                            0,
+                            42
+                        ),
+
+                    Size =
+                        UDim2.new(
+                            1,
+                            -10,
+                            0,
+                            180
+                        ),
+
+                    BackgroundTransparency = 1,
+
+                    BorderSizePixel = 0,
+
+                    CanvasSize =
+                        UDim2.new(
+                            0,
+                            0,
+                            0,
+                            0
+                        ),
+
+                    AutomaticCanvasSize =
+                        Enum.AutomaticSize.Y,
+
+                    ScrollBarThickness = 5
+                },
+                AdminContent
+            )
+
         Create(
-            "TextLabel",
+            "UIListLayout",
             {
-                Position =
-                    UDim2.new(
+                Padding =
+                    UDim.new(
                         0,
-                        5,
-                        0,
-                        40
+                        5
                     ),
 
-                Size =
-                    UDim2.new(
-                        1,
-                        -10,
-                        0,
-                        30
-                    ),
-
-                BackgroundTransparency = 1,
-
-                Font =
-                    Enum.Font.Gotham,
-
-                Text =
-                    "Player Name / Status / Key Status / Time Remaining",
-
-                TextColor3 =
-                    state.Theme.Secondary,
-
-                TextSize = 12,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
+                SortOrder =
+                    Enum.SortOrder.LayoutOrder
             },
-            AdminContent
+            PlayerList
         )
 
-        AdminButton.MouseButton1Click:Connect(
-            function()
+        local function RefreshPlayers()
 
-                local open =
-                    AdminContent.Visible
+            for _, child in
+                ipairs(
+                    PlayerList:GetChildren()
+                )
+            do
 
-                AdminContent.Visible =
-                    not open
+                if
+                    not child:IsA(
+                        "UIListLayout"
+                    )
+                then
 
-                if open then
-                    AdminButton.Text =
-                        "▶  Admin Panel"
-                else
-                    AdminButton.Text =
-                        "▼  Admin Panel"
+                    child:Destroy()
+
                 end
 
             end
+
+            for _, player in
+                ipairs(
+                    Players:GetPlayers()
+                )
+            do
+
+                local Row =
+                    Create(
+                        "Frame",
+                        {
+                            Size =
+                                UDim2.new(
+                                    1,
+                                    -5,
+                                    0,
+                                    50
+                                ),
+
+                            BackgroundColor3 =
+                                state.Theme.Background,
+
+                            BorderSizePixel = 0
+                        },
+                        PlayerList
+                    )
+
+                Corner(Row, 6)
+
+                Create(
+                    "TextLabel",
+                    {
+                        Position =
+                            UDim2.new(
+                                0,
+                                10,
+                                0,
+                                5
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                0.45,
+                                0,
+                                0,
+                                20
+                            ),
+
+                        BackgroundTransparency = 1,
+
+                        Font =
+                            Enum.Font.GothamMedium,
+
+                        Text =
+                            player.Name,
+
+                        TextColor3 =
+                            state.Theme.Primary,
+
+                        TextSize = 12,
+
+                        TextXAlignment =
+                            Enum.TextXAlignment.Left
+                    },
+                    Row
+                )
+
+                Create(
+                    "TextLabel",
+                    {
+                        Position =
+                            UDim2.new(
+                                0.45,
+                                0,
+                                0,
+                                5
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                0.55,
+                                -10,
+                                0,
+                                20
+                            ),
+
+                        BackgroundTransparency = 1,
+
+                        Font =
+                            Enum.Font.Gotham,
+
+                        Text =
+                            "Status: Unknown",
+
+                        TextColor3 =
+                            state.Theme.Secondary,
+
+                        TextSize = 11,
+
+                        TextXAlignment =
+                            Enum.TextXAlignment.Right
+                    },
+                    Row
+                )
+
+                Create(
+                    "TextLabel",
+                    {
+                        Position =
+                            UDim2.new(
+                                0,
+                                10,
+                                0,
+                                26
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                1,
+                                -20,
+                                0,
+                                18
+                            ),
+
+                        BackgroundTransparency = 1,
+
+                        Font =
+                            Enum.Font.Gotham,
+
+                        Text =
+                            "Key: Unknown   •   Time: N/A",
+
+                        TextColor3 =
+                            state.Theme.Secondary,
+
+                        TextSize = 10,
+
+                        TextXAlignment =
+                            Enum.TextXAlignment.Left
+                    },
+                    Row
+                )
+
+            end
+
+        end
+
+        RefreshPlayers()
+
+        Players.PlayerAdded:Connect(
+            RefreshPlayers
+        )
+
+        Players.PlayerRemoving:Connect(
+            RefreshPlayers
         )
 
     end
