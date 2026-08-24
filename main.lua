@@ -13,10 +13,8 @@ local Player = Players.LocalPlayer
 
 local CONFIG = {
 
-    -- Hard-coded lifetime key
     LifetimeKey = "pandaq75z6fyyhx5sfddcqwup2ku9o",
 
-    -- Automatic admins
     -- [UserId] = true
     Admins = {
         -- [123456789] = true,
@@ -24,7 +22,7 @@ local CONFIG = {
     },
 
     -- Manual exceptions
-    -- [UserId] = "Reason/Name"
+    -- [UserId] = "Label/Name"
     Exceptions = {
         -- [123456789] = "Tester",
     },
