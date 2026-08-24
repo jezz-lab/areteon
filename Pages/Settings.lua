@@ -7,32 +7,114 @@ local Settings = {}
 local Players = game:GetService("Players")
 
 --==================================================
+-- TIME UNITS
+-- Edit these when you want to change durations.
+--
+-- HOUR * 1 = 1 hour
+-- DAY  * 1 = 1 day
+-- WEEK * 1 = 1 week
+-- YEAR * 1 = 1 year
+--==================================================
+
+local HOUR = 60 * 60
+local DAY = HOUR * 24
+local WEEK = DAY * 7
+local YEAR = DAY * 365
+
+--==================================================
+-- PLAN DURATIONS
+--==================================================
+
+Settings.PlanDuration = {
+
+    Free =
+        HOUR * 12,
+
+    ["2 Day Trial"] =
+        DAY * 2,
+
+    ["1 Month"] =
+        DAY * 30,
+
+    ["1 Year"] =
+        YEAR * 1
+}
+
+--==================================================
 -- DEFAULT THEME
 --==================================================
 
 Settings.DefaultTheme = {
-    Background = Color3.fromRGB(15, 15, 19),
-    Primary = Color3.fromRGB(255, 255, 255),
-    Secondary = Color3.fromRGB(170, 170, 180),
-    Buttons = Color3.fromRGB(35, 35, 43),
-    Panel = Color3.fromRGB(22, 22, 28)
+
+    Background =
+        Color3.fromRGB(
+            15,
+            15,
+            19
+        ),
+
+    Primary =
+        Color3.fromRGB(
+            255,
+            255,
+            255
+        ),
+
+    Secondary =
+        Color3.fromRGB(
+            170,
+            170,
+            180
+        ),
+
+    Buttons =
+        Color3.fromRGB(
+            35,
+            35,
+            43
+        ),
+
+    Panel =
+        Color3.fromRGB(
+            22,
+            22,
+            28
+        )
 }
 
+--==================================================
+-- DEFAULT SETTINGS
+--==================================================
+
 Settings.DefaultSettings = {
+
     BackgroundTransparency = 0
+
 }
 
 --==================================================
 -- CREATE
 --==================================================
 
-local function Create(className, properties, parent)
-    local object = Instance.new(className)
+local function Create(
+    className,
+    properties,
+    parent
+)
 
-    for property, value in pairs(properties or {}) do
-        pcall(function()
-            object[property] = value
-        end)
+    local object =
+        Instance.new(className)
+
+    for property, value in
+        pairs(properties or {})
+    do
+
+        pcall(
+            function()
+                object[property] = value
+            end
+        )
+
     end
 
     object.Parent = parent
@@ -44,9 +126,20 @@ end
 -- CORNER
 --==================================================
 
-local function Corner(object, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 8)
+local function Corner(
+    object,
+    radius
+)
+
+    local corner =
+        Instance.new("UICorner")
+
+    corner.CornerRadius =
+        UDim.new(
+            0,
+            radius or 8
+        )
+
     corner.Parent = object
 end
 
@@ -54,49 +147,112 @@ end
 -- FORMAT TIME
 --==================================================
 
-local function FormatTime(seconds)
+local function FormatTime(
+    seconds
+)
 
-    seconds = tonumber(seconds) or 0
+    seconds =
+        tonumber(seconds) or 0
 
     if seconds <= 0 then
         return "Expired"
     end
 
-    local days = math.floor(
-        seconds / 86400
-    )
+    local years =
+        math.floor(
+            seconds / YEAR
+        )
 
-    seconds = seconds % 86400
+    seconds =
+        seconds % YEAR
 
-    local hours = math.floor(
-        seconds / 3600
-    )
+    local weeks =
+        math.floor(
+            seconds / WEEK
+        )
 
-    seconds = seconds % 3600
+    seconds =
+        seconds % WEEK
 
-    local minutes = math.floor(
-        seconds / 60
-    )
+    local days =
+        math.floor(
+            seconds / DAY
+        )
+
+    seconds =
+        seconds % DAY
+
+    local hours =
+        math.floor(
+            seconds / HOUR
+        )
+
+    seconds =
+        seconds % HOUR
+
+    local minutes =
+        math.floor(
+            seconds / 60
+        )
+
+    local secs =
+        math.floor(
+            seconds % 60
+        )
+
+    if years > 0 then
+
+        return string.format(
+            "%dy %dw",
+            years,
+            weeks
+        )
+
+    end
+
+    if weeks > 0 then
+
+        return string.format(
+            "%dw %dd",
+            weeks,
+            days
+        )
+
+    end
 
     if days > 0 then
+
         return string.format(
             "%dd %dh",
             days,
             hours
         )
+
     end
 
     if hours > 0 then
+
         return string.format(
             "%dh %dm",
             hours,
             minutes
         )
+
+    end
+
+    if minutes > 0 then
+
+        return string.format(
+            "%dm %ds",
+            minutes,
+            secs
+        )
+
     end
 
     return string.format(
-        "%dm",
-        minutes
+        "%ds",
+        secs
     )
 end
 
@@ -114,28 +270,37 @@ local function ApplyTheme(state)
         return
     end
 
-    local theme = state.Theme
+    local theme =
+        state.Theme
 
     if state.Main then
+
         state.Main.BackgroundColor3 =
             theme.Background
 
         state.Main.BackgroundTransparency =
-            state.Settings.BackgroundTransparency
+            state.Settings
+                .BackgroundTransparency
+
     end
 
     if state.Sidebar then
+
         state.Sidebar.BackgroundColor3 =
             theme.Panel
+
     end
 
     if state.TopBar then
+
         state.TopBar.BackgroundColor3 =
             theme.Panel
+
     end
 
-    -- Floating icon intentionally
+    -- The floating icon intentionally
     -- does not use the theme.
+
 end
 
 --==================================================
@@ -150,11 +315,15 @@ local function OpenColorPicker(
 )
 
     if state.ColorPicker then
+
         state.ColorPicker:Destroy()
+
         state.ColorPicker = nil
+
     end
 
     if not state.Gui then
+
         warn(
             "[Areteon] Settings: Gui missing."
         )
@@ -162,50 +331,56 @@ local function OpenColorPicker(
         return
     end
 
-    local picker = Create(
-        "Frame",
-        {
-            Name = "ColorPicker",
+    local picker =
+        Create(
+            "Frame",
+            {
+                Name =
+                    "ColorPicker",
 
-            AnchorPoint =
-                Vector2.new(
-                    0.5,
-                    0.5
-                ),
+                AnchorPoint =
+                    Vector2.new(
+                        0.5,
+                        0.5
+                    ),
 
-            Position =
-                UDim2.new(
-                    0.5,
-                    0,
-                    0.5,
-                    0
-                ),
+                Position =
+                    UDim2.new(
+                        0.5,
+                        0,
+                        0.5,
+                        0
+                    ),
 
-            Size =
-                UDim2.new(
-                    0,
-                    300,
-                    0,
-                    300
-                ),
+                Size =
+                    UDim2.new(
+                        0,
+                        300,
+                        0,
+                        300
+                    ),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    25,
-                    25,
-                    32
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        25,
+                        25,
+                        32
+                    ),
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            ZIndex = 100
-        },
-        state.Gui
+                ZIndex = 100
+            },
+            state.Gui
+        )
+
+    Corner(
+        picker,
+        10
     )
 
-    Corner(picker, 10)
-
-    state.ColorPicker = picker
+    state.ColorPicker =
+        picker
 
     --==================================================
     -- TITLE
@@ -260,39 +435,43 @@ local function OpenColorPicker(
     -- PREVIEW
     --==================================================
 
-    local preview = Create(
-        "Frame",
-        {
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    50
-                ),
+    local preview =
+        Create(
+            "Frame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        15,
+                        0,
+                        50
+                    ),
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    40
-                ),
+                Size =
+                    UDim2.new(
+                        1,
+                        -30,
+                        0,
+                        40
+                    ),
 
-            BackgroundColor3 =
-                currentColor,
+                BackgroundColor3 =
+                    currentColor,
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            ZIndex = 101
-        },
-        picker
+                ZIndex = 101
+            },
+            picker
+        )
+
+    Corner(
+        preview,
+        6
     )
 
-    Corner(preview, 6)
-
     --==================================================
-    -- RGB
+    -- RGB VALUES
     --==================================================
 
     local red =
@@ -356,57 +535,61 @@ local function OpenColorPicker(
             picker
         )
 
-        local input = Create(
-            "TextBox",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        50,
-                        0,
-                        y
-                    ),
+        local input =
+            Create(
+                "TextBox",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            50,
+                            0,
+                            y
+                        ),
 
-                Size =
-                    UDim2.new(
-                        1,
-                        -70,
-                        0,
-                        30
-                    ),
+                    Size =
+                        UDim2.new(
+                            1,
+                            -70,
+                            0,
+                            30
+                        ),
 
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        35,
-                        35,
-                        43
-                    ),
+                    BackgroundColor3 =
+                        Color3.fromRGB(
+                            35,
+                            35,
+                            43
+                        ),
 
-                BorderSizePixel = 0,
+                    BorderSizePixel = 0,
 
-                Font =
-                    Enum.Font.Gotham,
+                    Font =
+                        Enum.Font.Gotham,
 
-                Text =
-                    tostring(value),
+                    Text =
+                        tostring(value),
 
-                TextColor3 =
-                    Color3.fromRGB(
-                        255,
-                        255,
-                        255
-                    ),
+                    TextColor3 =
+                        Color3.fromRGB(
+                            255,
+                            255,
+                            255
+                        ),
 
-                TextSize = 12,
+                    TextSize = 12,
 
-                ClearTextOnFocus = false,
+                    ClearTextOnFocus = false,
 
-                ZIndex = 101
-            },
-            picker
+                    ZIndex = 101
+                },
+                picker
+            )
+
+        Corner(
+            input,
+            6
         )
-
-        Corner(input, 6)
 
         return input
     end
@@ -432,7 +615,9 @@ local function OpenColorPicker(
             185
         )
 
-    local function GetValue(text)
+    local function GetValue(
+        text
+    )
 
         local value =
             tonumber(text)
@@ -452,162 +637,193 @@ local function OpenColorPicker(
 
         preview.BackgroundColor3 =
             Color3.fromRGB(
-                GetValue(redBox.Text),
-                GetValue(greenBox.Text),
-                GetValue(blueBox.Text)
+                GetValue(
+                    redBox.Text
+                ),
+                GetValue(
+                    greenBox.Text
+                ),
+                GetValue(
+                    blueBox.Text
+                )
             )
     end
 
-    redBox:GetPropertyChangedSignal(
-        "Text"
-    ):Connect(
-        UpdatePreview
-    )
+    redBox:
+        GetPropertyChangedSignal(
+            "Text"
+        ):
+        Connect(
+            UpdatePreview
+        )
 
-    greenBox:GetPropertyChangedSignal(
-        "Text"
-    ):Connect(
-        UpdatePreview
-    )
+    greenBox:
+        GetPropertyChangedSignal(
+            "Text"
+        ):
+        Connect(
+            UpdatePreview
+        )
 
-    blueBox:GetPropertyChangedSignal(
-        "Text"
-    ):Connect(
-        UpdatePreview
-    )
+    blueBox:
+        GetPropertyChangedSignal(
+            "Text"
+        ):
+        Connect(
+            UpdatePreview
+        )
 
     --==================================================
     -- APPLY
     --==================================================
 
-    local apply = Create(
-        "TextButton",
-        {
-            Position =
-                UDim2.new(
-                    0,
-                    20,
-                    0,
-                    235
-                ),
+    local apply =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        20,
+                        0,
+                        235
+                    ),
 
-            Size =
-                UDim2.new(
-                    0,
-                    120,
-                    0,
-                    35
-                ),
+                Size =
+                    UDim2.new(
+                        0,
+                        120,
+                        0,
+                        35
+                    ),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    45,
-                    45,
-                    58
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        45,
+                        45,
+                        58
+                    ),
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            Font =
-                Enum.Font.GothamBold,
+                Font =
+                    Enum.Font.GothamBold,
 
-            Text = "Apply",
+                Text = "Apply",
 
-            TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
 
-            TextSize = 12,
+                TextSize = 12,
 
-            ZIndex = 101
-        },
-        picker
+                ZIndex = 101
+            },
+            picker
+        )
+
+    Corner(
+        apply,
+        7
     )
 
-    Corner(apply, 7)
+    apply.MouseButton1Click:
+        Connect(
+            function()
 
-    apply.MouseButton1Click:Connect(
-        function()
+                local color =
+                    Color3.fromRGB(
+                        GetValue(
+                            redBox.Text
+                        ),
+                        GetValue(
+                            greenBox.Text
+                        ),
+                        GetValue(
+                            blueBox.Text
+                        )
+                    )
 
-            local color =
-                Color3.fromRGB(
-                    GetValue(redBox.Text),
-                    GetValue(greenBox.Text),
-                    GetValue(blueBox.Text)
-                )
+                callback(color)
 
-            callback(color)
+                picker:Destroy()
 
-            picker:Destroy()
-
-            state.ColorPicker = nil
-        end
-    )
+                state.ColorPicker =
+                    nil
+            end
+        )
 
     --==================================================
     -- CANCEL
     --==================================================
 
-    local cancel = Create(
-        "TextButton",
-        {
-            Position =
-                UDim2.new(
-                    0,
-                    160,
-                    0,
-                    235
-                ),
+    local cancel =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        160,
+                        0,
+                        235
+                    ),
 
-            Size =
-                UDim2.new(
-                    0,
-                    120,
-                    0,
-                    35
-                ),
+                Size =
+                    UDim2.new(
+                        0,
+                        120,
+                        0,
+                        35
+                    ),
 
-            BackgroundColor3 =
-                Color3.fromRGB(
-                    35,
-                    35,
-                    43
-                ),
+                BackgroundColor3 =
+                    Color3.fromRGB(
+                        35,
+                        35,
+                        43
+                    ),
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            Font =
-                Enum.Font.GothamBold,
+                Font =
+                    Enum.Font.GothamBold,
 
-            Text = "Cancel",
+                Text = "Cancel",
 
-            TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
+                TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        255,
+                        255
+                    ),
 
-            TextSize = 12,
+                TextSize = 12,
 
-            ZIndex = 101
-        },
-        picker
+                ZIndex = 101
+            },
+            picker
+        )
+
+    Corner(
+        cancel,
+        7
     )
 
-    Corner(cancel, 7)
+    cancel.MouseButton1Click:
+        Connect(
+            function()
 
-    cancel.MouseButton1Click:Connect(
-        function()
+                picker:Destroy()
 
-            picker:Destroy()
+                state.ColorPicker =
+                    nil
 
-            state.ColorPicker = nil
-        end
-    )
+            end
+        )
 end
 
 --==================================================
@@ -620,23 +836,24 @@ local function CreateColorRow(
     name
 )
 
-    local row = Create(
-        "Frame",
-        {
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    0,
-                    38
-                ),
+    local row =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        38
+                    ),
 
-            BackgroundTransparency = 1,
+                BackgroundTransparency = 1,
 
-            BorderSizePixel = 0
-        },
-        parent
-    )
+                BorderSizePixel = 0
+            },
+            parent
+        )
 
     Create(
         "TextLabel",
@@ -675,57 +892,65 @@ local function CreateColorRow(
         row
     )
 
-    local preview = Create(
-        "TextButton",
-        {
-            Position =
-                UDim2.new(
-                    1,
-                    -55,
-                    0,
-                    5
-                ),
+    local preview =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(
+                        1,
+                        -55,
+                        0,
+                        5
+                    ),
 
-            Size =
-                UDim2.new(
-                    0,
-                    40,
-                    0,
-                    28
-                ),
+                Size =
+                    UDim2.new(
+                        0,
+                        40,
+                        0,
+                        28
+                    ),
 
-            BackgroundColor3 =
-                state.Theme[name],
+                BackgroundColor3 =
+                    state.Theme[name],
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            Text = ""
-        },
-        row
+                Text = ""
+            },
+            row
+        )
+
+    Corner(
+        preview,
+        6
     )
 
-    Corner(preview, 6)
+    preview.MouseButton1Click:
+        Connect(
+            function()
 
-    preview.MouseButton1Click:Connect(
-        function()
+                OpenColorPicker(
+                    state,
+                    name,
+                    state.Theme[name],
 
-            OpenColorPicker(
-                state,
-                name,
-                state.Theme[name],
-                function(newColor)
+                    function(newColor)
 
-                    state.Theme[name] =
-                        newColor
+                        state.Theme[name] =
+                            newColor
 
-                    preview.BackgroundColor3 =
-                        newColor
+                        preview.BackgroundColor3 =
+                            newColor
 
-                    ApplyTheme(state)
-                end
-            )
-        end
-    )
+                        ApplyTheme(state)
+
+                    end
+                )
+
+            end
+        )
 
     return row
 end
@@ -741,58 +966,63 @@ local function CreateDropdown(
     expandedHeight
 )
 
-    local box = Create(
-        "Frame",
-        {
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    0,
-                    expandedHeight
-                ),
+    local box =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        expandedHeight
+                    ),
 
-            BackgroundColor3 =
-                state.Theme.Panel,
+                BackgroundColor3 =
+                    state.Theme.Panel,
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            ClipsDescendants = true
-        },
-        parent
+                ClipsDescendants = true
+            },
+            parent
+        )
+
+    Corner(
+        box,
+        10
     )
 
-    Corner(box, 10)
+    local header =
+        Create(
+            "TextButton",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        42
+                    ),
 
-    local header = Create(
-        "TextButton",
-        {
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    0,
-                    42
-                ),
+                BackgroundTransparency = 1,
 
-            BackgroundTransparency = 1,
+                Font =
+                    Enum.Font.GothamBold,
 
-            Font =
-                Enum.Font.GothamBold,
+                Text =
+                    "^  " .. title,
 
-            Text =
-                "^  " .. title,
+                TextColor3 =
+                    state.Theme.Primary,
 
-            TextColor3 =
-                state.Theme.Primary,
+                TextSize = 14,
 
-            TextSize = 14,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        box
-    )
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            box
+        )
 
     Create(
         "UIPadding",
@@ -806,71 +1036,200 @@ local function CreateDropdown(
         header
     )
 
-    local content = Create(
-        "Frame",
-        {
-            Position =
-                UDim2.new(
-                    0,
-                    10,
-                    0,
-                    45
-                ),
+    local content =
+        Create(
+            "Frame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        10,
+                        0,
+                        45
+                    ),
 
-            Size =
-                UDim2.new(
-                    1,
-                    -20,
-                    0,
-                    expandedHeight - 50
-                ),
+                Size =
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        expandedHeight - 50
+                    ),
 
-            BackgroundTransparency = 1
-        },
-        box
-    )
+                BackgroundTransparency = 1
+            },
+            box
+        )
 
     local expanded = true
 
-    header.MouseButton1Click:Connect(
-        function()
+    header.MouseButton1Click:
+        Connect(
+            function()
 
-            expanded = not expanded
+                expanded =
+                    not expanded
 
-            if expanded then
+                if expanded then
 
-                header.Text =
-                    "^  " .. title
+                    header.Text =
+                        "^  " .. title
 
-                content.Visible = true
+                    content.Visible =
+                        true
 
-                box.Size =
-                    UDim2.new(
-                        1,
-                        0,
-                        0,
-                        expandedHeight
-                    )
+                    box.Size =
+                        UDim2.new(
+                            1,
+                            0,
+                            0,
+                            expandedHeight
+                        )
 
-            else
+                else
 
-                header.Text =
-                    "v  " .. title
+                    header.Text =
+                        "v  " .. title
 
-                content.Visible = false
+                    content.Visible =
+                        false
 
-                box.Size =
-                    UDim2.new(
-                        1,
-                        0,
-                        0,
-                        42
-                    )
+                    box.Size =
+                        UDim2.new(
+                            1,
+                            0,
+                            0,
+                            42
+                        )
+
+                end
             end
-        end
-    )
+        )
 
     return box, content
+end
+
+--==================================================
+-- PLAYER DATA
+--==================================================
+
+local function GetPlayerData(
+    state,
+    player
+)
+
+    local userId =
+        player.UserId
+
+    --==================================================
+    -- ADMIN
+    --==================================================
+
+    if state.Admins[userId] then
+
+        return {
+            Status = "Admin",
+            KeyStatus = "Bypass",
+            Time = "∞",
+            Unlimited = true
+        }
+    end
+
+    --==================================================
+    -- EXCEPTION
+    --==================================================
+
+    if state.Exceptions[userId] then
+
+        return {
+            Status = "Exception",
+            KeyStatus = "Bypass",
+            Time = "∞",
+            Unlimited = true
+        }
+    end
+
+    --==================================================
+    -- DATA
+    --==================================================
+
+    local data =
+        state.KeyData[userId]
+
+    --==================================================
+    -- NO DATA
+    --==================================================
+
+    if not data then
+
+        return {
+            Status = "Free",
+            KeyStatus = "Active",
+            Time = FormatTime(
+                Settings.PlanDuration.Free
+            ),
+            NoStoredData = true
+        }
+    end
+
+    local status =
+        data.Status or "Free"
+
+    local keyStatus =
+        data.KeyStatus or "Active"
+
+    local expiresAt =
+        data.ExpiresAt
+
+    --==================================================
+    -- EXPIRATION
+    --==================================================
+
+    if not expiresAt then
+
+        local duration =
+            Settings.PlanDuration[
+                status
+            ]
+
+        if duration then
+
+            expiresAt =
+                os.time() + duration
+
+            data.ExpiresAt =
+                expiresAt
+
+        end
+    end
+
+    --==================================================
+    -- TIME
+    --==================================================
+
+    local time = "N/A"
+
+    if expiresAt then
+
+        time =
+            FormatTime(
+                expiresAt - os.time()
+            )
+
+    elseif data.TimeRemaining then
+
+        time =
+            FormatTime(
+                data.TimeRemaining
+            )
+    end
+
+    return {
+        Status = status,
+        KeyStatus = keyStatus,
+        Time = time,
+        ExpiresAt = expiresAt
+    }
 end
 
 --==================================================
@@ -883,86 +1242,36 @@ local function CreateAdminPlayerRow(
     player
 )
 
-    local userId = player.UserId
+    local info =
+        GetPlayerData(
+            state,
+            player
+        )
 
-    local isAdmin =
-        state.Admins
-        and state.Admins[userId] == true
+    local row =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(
+                        1,
+                        -5,
+                        0,
+                        64
+                    ),
 
-    local isException =
-        state.Exceptions
-        and state.Exceptions[userId] == true
+                BackgroundColor3 =
+                    state.Theme.Background,
 
-    local data =
-        state.KeyData
-        and state.KeyData[userId]
+                BorderSizePixel = 0
+            },
+            parent
+        )
 
-    local status = "Free"
-    local keyStatus = "No Key"
-    local timeRemaining = "N/A"
-
-    if isAdmin then
-
-        status = "ADMIN"
-        keyStatus = "Bypass"
-        timeRemaining = "∞"
-
-    elseif isException then
-
-        status = "EXCEPTION"
-        keyStatus = "Bypass"
-        timeRemaining = "∞"
-
-    elseif data then
-
-        status =
-            data.Status
-            or "Free"
-
-        keyStatus =
-            data.KeyStatus
-            or "Unknown"
-
-        if data.ExpiresAt then
-
-            local remaining =
-                data.ExpiresAt -
-                os.time()
-
-            timeRemaining =
-                FormatTime(
-                    remaining
-                )
-
-        elseif data.TimeRemaining then
-
-            timeRemaining =
-                FormatTime(
-                    data.TimeRemaining
-                )
-        end
-    end
-
-    local row = Create(
-        "Frame",
-        {
-            Size =
-                UDim2.new(
-                    1,
-                    -5,
-                    0,
-                    64
-                ),
-
-            BackgroundColor3 =
-                state.Theme.Background,
-
-            BorderSizePixel = 0
-        },
-        parent
+    Corner(
+        row,
+        7
     )
-
-    Corner(row, 7)
 
     --==================================================
     -- NAME
@@ -1035,7 +1344,7 @@ local function CreateAdminPlayerRow(
                 Enum.Font.GothamMedium,
 
             Text =
-                status,
+                info.Status,
 
             TextColor3 =
                 state.Theme.Primary,
@@ -1049,7 +1358,7 @@ local function CreateAdminPlayerRow(
     )
 
     --==================================================
-    -- KEY
+    -- KEY STATUS
     --==================================================
 
     Create(
@@ -1077,7 +1386,7 @@ local function CreateAdminPlayerRow(
                 Enum.Font.Gotham,
 
             Text =
-                keyStatus,
+                info.KeyStatus,
 
             TextColor3 =
                 state.Theme.Secondary,
@@ -1094,43 +1403,44 @@ local function CreateAdminPlayerRow(
     -- TIME
     --==================================================
 
-    Create(
-        "TextLabel",
-        {
-            Position =
-                UDim2.new(
-                    0.75,
-                    0,
-                    0,
-                    5
-                ),
+    local timeLabel =
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(
+                        0.75,
+                        0,
+                        0,
+                        5
+                    ),
 
-            Size =
-                UDim2.new(
-                    0.25,
-                    -10,
-                    0,
-                    22
-                ),
+                Size =
+                    UDim2.new(
+                        0.25,
+                        -10,
+                        0,
+                        22
+                    ),
 
-            BackgroundTransparency = 1,
+                BackgroundTransparency = 1,
 
-            Font =
-                Enum.Font.Gotham,
+                Font =
+                    Enum.Font.Gotham,
 
-            Text =
-                timeRemaining,
+                Text =
+                    info.Time,
 
-            TextColor3 =
-                state.Theme.Secondary,
+                TextColor3 =
+                    state.Theme.Secondary,
 
-            TextSize = 11,
+                TextSize = 11,
 
-            TextXAlignment =
-                Enum.TextXAlignment.Right
-        },
-        row
-    )
+                TextXAlignment =
+                    Enum.TextXAlignment.Right
+            },
+            row
+        )
 
     --==================================================
     -- USER ID
@@ -1162,7 +1472,9 @@ local function CreateAdminPlayerRow(
 
             Text =
                 "UserId: " ..
-                tostring(userId),
+                tostring(
+                    player.UserId
+                ),
 
             TextColor3 =
                 state.Theme.Secondary,
@@ -1175,6 +1487,37 @@ local function CreateAdminPlayerRow(
         row
     )
 
+    --==================================================
+    -- LIVE COUNTDOWN
+    --==================================================
+
+    if not info.Unlimited then
+
+        task.spawn(
+            function()
+
+                while row.Parent do
+
+                    task.wait(1)
+
+                    if not row.Parent then
+                        break
+                    end
+
+                    local latest =
+                        GetPlayerData(
+                            state,
+                            player
+                        )
+
+                    timeLabel.Text =
+                        latest.Time
+
+                end
+            end
+        )
+    end
+
     return row
 end
 
@@ -1185,6 +1528,7 @@ end
 function Settings.Start(state)
 
     if not state then
+
         warn(
             "[Areteon] Settings: state missing."
         )
@@ -1193,6 +1537,7 @@ function Settings.Start(state)
     end
 
     if not state.Content then
+
         warn(
             "[Areteon] Settings: " ..
             "state.Content missing."
@@ -1202,7 +1547,7 @@ function Settings.Start(state)
     end
 
     --==================================================
-    -- STATE
+    -- STATE DEFAULTS
     --==================================================
 
     state.Theme =
@@ -1253,27 +1598,29 @@ function Settings.Start(state)
     -- PAGE
     --==================================================
 
-    local page = Create(
-        "Frame",
-        {
-            Name = "SettingsPage",
+    local page =
+        Create(
+            "Frame",
+            {
+                Name =
+                    "SettingsPage",
 
-            Size =
-                UDim2.new(
-                    1,
-                    -20,
-                    0,
-                    900
-                ),
+                Size =
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        900
+                    ),
 
-            BackgroundTransparency = 1,
+                BackgroundTransparency = 1,
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            Visible = false
-        },
-        state.Content
-    )
+                Visible = false
+            },
+            state.Content
+        )
 
     --==================================================
     -- TITLE
@@ -1320,29 +1667,45 @@ function Settings.Start(state)
     -- LIST
     --==================================================
 
-    local list = Create(
-        "Frame",
-        {
-            Position =
-                UDim2.new(
-                    0,
-                    15,
-                    0,
-                    65
-                ),
+    local list =
+        Create(
+            "ScrollingFrame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        15,
+                        0,
+                        65
+                    ),
 
-            Size =
-                UDim2.new(
-                    1,
-                    -30,
-                    0,
-                    800
-                ),
+                Size =
+                    UDim2.new(
+                        1,
+                        -30,
+                        0,
+                        800
+                    ),
 
-            BackgroundTransparency = 1
-        },
-        page
-    )
+                BackgroundTransparency = 1,
+
+                BorderSizePixel = 0,
+
+                CanvasSize =
+                    UDim2.new(
+                        0,
+                        0,
+                        0,
+                        0
+                    ),
+
+                AutomaticCanvasSize =
+                    Enum.AutomaticSize.Y,
+
+                ScrollBarThickness = 5
+            },
+            page
+        )
 
     Create(
         "UIListLayout",
@@ -1363,7 +1726,8 @@ function Settings.Start(state)
     -- COLORS
     --==================================================
 
-    local colorsBox, colorsContent =
+    local colorsBox,
+        colorsContent =
         CreateDropdown(
             state,
             list,
@@ -1420,7 +1784,8 @@ function Settings.Start(state)
     -- GENERAL
     --==================================================
 
-    local generalBox, generalContent =
+    local generalBox,
+        generalContent =
         CreateDropdown(
             state,
             list,
@@ -1466,84 +1831,91 @@ function Settings.Start(state)
         generalContent
     )
 
-    local transparency = Create(
-        "TextBox",
-        {
-            Position =
-                UDim2.new(
-                    0.58,
-                    0,
-                    0,
-                    3
-                ),
+    local transparency =
+        Create(
+            "TextBox",
+            {
+                Position =
+                    UDim2.new(
+                        0.58,
+                        0,
+                        0,
+                        3
+                    ),
 
-            Size =
-                UDim2.new(
-                    0.38,
-                    0,
-                    0,
-                    32
-                ),
+                Size =
+                    UDim2.new(
+                        0.38,
+                        0,
+                        0,
+                        32
+                    ),
 
-            BackgroundColor3 =
-                state.Theme.Background,
+                BackgroundColor3 =
+                    state.Theme.Background,
 
-            BorderSizePixel = 0,
+                BorderSizePixel = 0,
 
-            Font =
-                Enum.Font.Gotham,
+                Font =
+                    Enum.Font.Gotham,
 
-            Text =
-                tostring(
-                    state.Settings
-                        .BackgroundTransparency
+                Text =
+                    tostring(
+                        state.Settings
+                            .BackgroundTransparency
                         * 100
-                ),
+                    ),
 
-            TextColor3 =
-                state.Theme.Primary,
+                TextColor3 =
+                    state.Theme.Primary,
 
-            TextSize = 12,
+                TextSize = 12,
 
-            ClearTextOnFocus = false
-        },
-        generalContent
+                ClearTextOnFocus = false
+            },
+            generalContent
+        )
+
+    Corner(
+        transparency,
+        6
     )
 
-    Corner(transparency, 6)
+    transparency.FocusLost:
+        Connect(
+            function()
 
-    transparency.FocusLost:Connect(
-        function()
+                local value =
+                    tonumber(
+                        transparency.Text
+                    )
 
-            local value =
-                tonumber(
-                    transparency.Text
-                )
+                if not value then
 
-            if not value then
+                    transparency.Text =
+                        "0"
 
-                transparency.Text = "0"
+                    return
+                end
 
-                return
+                value =
+                    math.clamp(
+                        value,
+                        0,
+                        100
+                    )
+
+                state.Settings
+                    .BackgroundTransparency =
+                    value / 100
+
+                transparency.Text =
+                    tostring(value)
+
+                ApplyTheme(state)
+
             end
-
-            value =
-                math.clamp(
-                    value,
-                    0,
-                    100
-                )
-
-            state.Settings
-                .BackgroundTransparency =
-                value / 100
-
-            transparency.Text =
-                tostring(value)
-
-            ApplyTheme(state)
-        end
-    )
+        )
 
     --==================================================
     -- ADMIN PANEL
@@ -1551,7 +1923,8 @@ function Settings.Start(state)
 
     if state.IsAdmin then
 
-        local adminBox, adminContent =
+        local adminBox,
+            adminContent =
             CreateDropdown(
                 state,
                 list,
@@ -1598,46 +1971,45 @@ function Settings.Start(state)
                 adminContent
             )
 
-        local playerList = Create(
-            "ScrollingFrame",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        5,
-                        0,
-                        35
-                    ),
+        local playerList =
+            Create(
+                "ScrollingFrame",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            5,
+                            0,
+                            35
+                        ),
 
-                Size =
-                    UDim2.new(
-                        1,
-                        -10,
-                        0,
-                        245
-                    ),
+                    Size =
+                        UDim2.new(
+                            1,
+                            -10,
+                            0,
+                            245
+                        ),
 
-                BackgroundTransparency = 1,
+                    BackgroundTransparency = 1,
 
-                BorderSizePixel = 0,
+                    BorderSizePixel = 0,
 
-                CanvasSize =
-                    UDim2.new(
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
+                    CanvasSize =
+                        UDim2.new(
+                            0,
+                            0,
+                            0,
+                            0
+                        ),
 
-                AutomaticCanvasSize =
-                    Enum.AutomaticSize.Y,
+                    AutomaticCanvasSize =
+                        Enum.AutomaticSize.Y,
 
-                ScrollBarThickness = 5,
-
-                ScrollBarImageTransparency = 0.2
-            },
-            adminContent
-        )
+                    ScrollBarThickness = 5
+                },
+                adminContent
+            )
 
         Create(
             "UIListLayout",
@@ -1673,6 +2045,7 @@ function Settings.Start(state)
                 ) then
 
                     child:Destroy()
+
                 end
             end
 
@@ -1687,18 +2060,21 @@ function Settings.Start(state)
                     playerList,
                     player
                 )
+
             end
         end
 
         RefreshPlayers()
 
-        Players.PlayerAdded:Connect(
-            RefreshPlayers
-        )
+        Players.PlayerAdded:
+            Connect(
+                RefreshPlayers
+            )
 
-        Players.PlayerRemoving:Connect(
-            RefreshPlayers
-        )
+        Players.PlayerRemoving:
+            Connect(
+                RefreshPlayers
+            )
     end
 
     --==================================================
