@@ -90,7 +90,7 @@ function Hub.Start(Data)
     --------------------------------------------------
 
     local Window = Instance.new("Frame")
-    Window.Size = UDim2.fromOffset(850, 550)
+    Window.Size = UDim2.fromOffset(550, 350)
     Window.Position = UDim2.new(0.5, -425, 0.5, -275)
     Window.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
     Window.BorderSizePixel = 0
