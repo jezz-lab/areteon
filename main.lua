@@ -1,5 +1,5 @@
 --==================================================
--- ARETEON MAIN
+-- ARETEON | main.lua
 --==================================================
 
 local Players = game:GetService("Players")
@@ -12,54 +12,70 @@ local Player = Players.LocalPlayer
 --==================================================
 
 local CONFIG = {
+    -- Hard-coded lifetime key
+    LifetimeKey = "pandaq75z6fyyhx5sfddcqwup2ku9o6",
 
-    LifetimeKey = "pandaq75z6fyyhx5sfddcqwup2ku9o",
-
-    -- [UserId] = true
+    -- Users who automatically get ADMIN access
     Admins = {
-        -- [123456789] = true,
         [8045408189] = true,
     },
 
-    -- Manual exceptions
-    -- [UserId] = "Label/Name"
+    -- Users who bypass the key
+    -- You can add/remove exceptions manually here.
     Exceptions = {
-        -- [123456789] = "Tester",
+        -- [987654321] = true,
     },
 
-    -- Repository
+    -- Your GitHub repository
     BaseURL =
         "https://raw.githubusercontent.com/" ..
         "jezz-lab/areteon/main/"
 }
 
 --==================================================
--- ACCESS
+-- ACCESS CHECK
 --==================================================
 
 local function GetAccess()
     local userId = Player.UserId
 
-    if CONFIG.Admins[userId] then
-        return "ADMIN", true, false
+    -- Admin has highest priority
+    if CONFIG.Admins[userId] == true then
+        return {
+            Type = "ADMIN",
+            IsAdmin = true,
+            IsException = false,
+            RequiresKey = false
+        }
     end
 
-    if CONFIG.Exceptions[userId] then
-        return "EXCEPTION", false, true
+    -- Exception has second priority
+    if CONFIG.Exceptions[userId] == true then
+        return {
+            Type = "EXCEPTION",
+            IsAdmin = false,
+            IsException = true,
+            RequiresKey = false
+        }
     end
 
-    return "USER", false, false
+    -- Normal user
+    return {
+        Type = "USER",
+        IsAdmin = false,
+        IsException = false,
+        RequiresKey = true
+    }
 end
 
-local AccessType, IsAdmin, IsException =
-    GetAccess()
+local Access = GetAccess()
 
 --==================================================
 -- LOAD MODULE
 --==================================================
 
-local function LoadModule(file)
-    local url = CONFIG.BaseURL .. file
+local function LoadModule(fileName)
+    local url = CONFIG.BaseURL .. fileName
 
     local success, source = pcall(function()
         return game:HttpGet(url)
@@ -67,8 +83,9 @@ local function LoadModule(file)
 
     if not success then
         return nil,
-            "Failed downloading " ..
-            file .. ": " ..
+            "Could not download " ..
+            fileName ..
+            ": " ..
             tostring(source)
     end
 
@@ -77,8 +94,9 @@ local function LoadModule(file)
 
     if not fn then
         return nil,
-            "Failed compiling " ..
-            file .. ": " ..
+            "Could not compile " ..
+            fileName ..
+            ": " ..
             tostring(compileError)
     end
 
@@ -87,8 +105,9 @@ local function LoadModule(file)
 
     if not executed then
         return nil,
-            "Failed executing " ..
-            file .. ": " ..
+            "Could not execute " ..
+            fileName ..
+            ": " ..
             tostring(result)
     end
 
@@ -96,306 +115,192 @@ local function LoadModule(file)
 end
 
 --==================================================
--- KEY GUI
+-- LOAD HUB
 --==================================================
 
-local function CreateKeyGUI()
-    local old =
-        CoreGui:FindFirstChild(
-            "AreteonKeySystem"
-        )
-
-    if old then
-        old:Destroy()
-    end
-
-    local Gui = Instance.new("ScreenGui")
-    Gui.Name = "AreteonKeySystem"
-    Gui.ResetOnSpawn = false
-    Gui.ZIndexBehavior =
-        Enum.ZIndexBehavior.Sibling
-    Gui.Parent = CoreGui
-
-    local Frame = Instance.new("Frame")
-    Frame.Size =
-        UDim2.fromOffset(430, 240)
-
-    Frame.Position =
-        UDim2.new(
-            0.5,
-            -215,
-            0.5,
-            -120
-        )
-
-    Frame.BackgroundColor3 =
-        Color3.fromRGB(25, 25, 30)
-
-    Frame.BorderSizePixel = 0
-    Frame.Parent = Gui
-
-    local Corner = Instance.new(
-        "UICorner"
-    )
-
-    Corner.CornerRadius =
-        UDim.new(0, 10)
-
-    Corner.Parent = Frame
-
-    local Title = Instance.new(
-        "TextLabel"
-    )
-
-    Title.Size =
-        UDim2.new(1, -30, 0, 45)
-
-    Title.Position =
-        UDim2.fromOffset(15, 10)
-
-    Title.BackgroundTransparency = 1
-
-    Title.Text =
-        "◉  ARETEON KEY SYSTEM"
-
-    Title.TextColor3 =
-        Color3.new(1, 1, 1)
-
-    Title.TextSize = 18
-    Title.Font =
-        Enum.Font.GothamBold
-
-    Title.TextXAlignment =
-        Enum.TextXAlignment.Left
-
-    Title.Parent = Frame
-
-    local Input = Instance.new(
-        "TextBox"
-    )
-
-    Input.Size =
-        UDim2.new(1, -30, 0, 42)
-
-    Input.Position =
-        UDim2.fromOffset(15, 65)
-
-    Input.BackgroundColor3 =
-        Color3.fromRGB(40, 40, 48)
-
-    Input.BorderSizePixel = 0
-
-    Input.PlaceholderText =
-        "Enter lifetime key..."
-
-    Input.Text = ""
-
-    Input.TextColor3 =
-        Color3.new(1, 1, 1)
-
-    Input.TextSize = 14
-
-    Input.Font =
-        Enum.Font.Gotham
-
-    Input.ClearTextOnFocus = false
-
-    Input.Parent = Frame
-
-    local InputCorner =
-        Instance.new("UICorner")
-
-    InputCorner.CornerRadius =
-        UDim.new(0, 6)
-
-    InputCorner.Parent = Input
-
-    local Verify =
-        Instance.new("TextButton")
-
-    Verify.Size =
-        UDim2.fromOffset(180, 42)
-
-    Verify.Position =
-        UDim2.fromOffset(15, 120)
-
-    Verify.BackgroundColor3 =
-        Color3.fromRGB(55, 55, 65)
-
-    Verify.BorderSizePixel = 0
-
-    Verify.Text = "VERIFY"
-
-    Verify.TextColor3 =
-        Color3.new(1, 1, 1)
-
-    Verify.TextSize = 14
-
-    Verify.Font =
-        Enum.Font.GothamBold
-
-    Verify.Parent = Frame
-
-    local VerifyCorner =
-        Instance.new("UICorner")
-
-    VerifyCorner.CornerRadius =
-        UDim.new(0, 6)
-
-    VerifyCorner.Parent =
-        Verify
-
-    local Status =
-        Instance.new("TextLabel")
-
-    Status.Size =
-        UDim2.new(1, -30, 0, 55)
-
-    Status.Position =
-        UDim2.fromOffset(15, 170)
-
-    Status.BackgroundTransparency = 1
-
-    Status.Text =
-        "Enter your lifetime key."
-
-    Status.TextColor3 =
-        Color3.fromRGB(200, 200, 210)
-
-    Status.TextSize = 13
-
-    Status.Font =
-        Enum.Font.Gotham
-
-    Status.TextWrapped = true
-
-    Status.TextXAlignment =
-        Enum.TextXAlignment.Left
-
-    Status.Parent = Frame
-
-    local function VerifyKey()
-        local entered =
-            Input.Text
-
-        if entered == "" then
-            Status.Text =
-                "Please enter a key."
-
-            return false
-        end
-
-        if entered ==
-            CONFIG.LifetimeKey then
-
-            Status.Text =
-                "Lifetime key accepted!"
-
-            return true
-        end
-
-        Status.Text =
-            "Invalid lifetime key."
-
-        return false
-    end
-
-    Verify.MouseButton1Click:Connect(
-        function()
-
-            if not VerifyKey() then
-                return
-            end
-
-            task.wait(0.25)
-
-            Gui:Destroy()
-
-            LoadHub()
-        end
-    )
-
-    return Gui
-end
-
---==================================================
--- HUB
---==================================================
-
-function LoadHub()
-
+local function StartHub()
     local Hub, Error =
         LoadModule("hub.lua")
 
     if not Hub then
-
         warn(
             "[Areteon] Hub error: " ..
+            tostring(Error)
+        )
+
+        return false
+    end
+
+    if type(Hub) ~= "table" then
+        warn(
+            "[Areteon] hub.lua did not return a table."
+        )
+
+        return false
+    end
+
+    if type(Hub.Start) ~= "function" then
+        warn(
+            "[Areteon] Hub.Start() does not exist."
+        )
+
+        return false
+    end
+
+    local success, result =
+        pcall(function()
+            return Hub.Start({
+                Player = Player,
+
+                AccessType =
+                    Access.Type,
+
+                IsAdmin =
+                    Access.IsAdmin,
+
+                IsException =
+                    Access.IsException
+            })
+        end)
+
+    if not success then
+        warn(
+            "[Areteon] Hub failed: " ..
+            tostring(result)
+        )
+
+        return false
+    end
+
+    return true
+end
+
+--==================================================
+-- KEY GUI
+--==================================================
+
+local function StartKeyGui()
+
+    local KeyGui, Error =
+        LoadModule("keyGui.lua")
+
+    if not KeyGui then
+        warn(
+            "[Areteon] KeyGui error: " ..
             tostring(Error)
         )
 
         return
     end
 
-    if type(Hub.Start) ~=
-        "function" then
-
+    if type(KeyGui) ~= "table" then
         warn(
-            "[Areteon] Hub.Start() missing."
+            "[Areteon] keyGui.lua did not return a table."
         )
 
         return
     end
 
-    Hub.Start({
+    -- If your keyGui.lua has its own Create function,
+    -- use it.
+    if type(KeyGui.Create) == "function" then
 
-        Player = Player,
+        KeyGui.Create({
 
-        AccessType =
-            AccessType,
+            -- Hard-coded key used for testing
+            LifetimeKey =
+                CONFIG.LifetimeKey,
 
-        IsAdmin =
-            IsAdmin,
+            OnVerify = function(input)
 
-        IsException =
-            IsException,
+                if input ==
+                    CONFIG.LifetimeKey then
 
-        ExceptionName =
-            CONFIG.Exceptions[
-                Player.UserId
-            ]
+                    return true,
+                        "Lifetime key accepted."
 
-    })
+                end
 
+                return false,
+                    "Invalid lifetime key."
+
+            end,
+
+            OnSuccess = function()
+
+                StartHub()
+
+            end
+
+        })
+
+        return
+    end
+
+    warn(
+        "[Areteon] KeyGui.Create() does not exist."
+    )
 end
 
 --==================================================
--- AUTOMATIC ACCESS
+-- START
 --==================================================
 
-if IsAdmin then
+print(
+    "[Areteon] Starting..."
+)
+
+print(
+    "[Areteon] UserId:",
+    Player.UserId
+)
+
+print(
+    "[Areteon] Access:",
+    Access.Type
+)
+
+--==================================================
+-- ADMIN
+--==================================================
+
+if Access.IsAdmin then
 
     print(
         "[Areteon] Admin detected."
     )
 
-    LoadHub()
+    StartHub()
 
-elseif IsException then
+    return
+end
+
+--==================================================
+-- EXCEPTION
+--==================================================
+
+if Access.IsException then
 
     print(
-        "[Areteon] Exception detected: " ..
-        tostring(
-            CONFIG.Exceptions[
-                Player.UserId
-            ]
-        )
+        "[Areteon] Exception detected."
     )
 
-    LoadHub()
+    StartHub()
 
-else
-
-    CreateKeyGUI()
-
+    return
 end
+
+--==================================================
+-- NORMAL USER
+--==================================================
+
+if Access.RequiresKey then
+
+    StartKeyGui()
+
+    return
+end
+
+warn(
+    "[Areteon] No valid access state."
+)
