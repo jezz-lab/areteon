@@ -9,16 +9,35 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 --==================================================
+-- DEFAULT CONFIG
+--==================================================
+
+Settings.DefaultTheme = {
+    Background = Color3.fromRGB(15, 15, 19),
+    Primary = Color3.fromRGB(255, 255, 255),
+    Secondary = Color3.fromRGB(170, 170, 180),
+    Buttons = Color3.fromRGB(35, 35, 43),
+    Panel = Color3.fromRGB(22, 22, 28)
+}
+
+Settings.DefaultSettings = {
+    BackgroundTransparency = 0
+}
+
+--==================================================
 -- HELPERS
 --==================================================
 
 local function Create(className, properties, parent)
+
     local object = Instance.new(className)
 
     for property, value in pairs(properties or {}) do
+
         pcall(function()
             object[property] = value
         end)
+
     end
 
     object.Parent = parent
@@ -27,15 +46,473 @@ local function Create(className, properties, parent)
 end
 
 local function Corner(object, radius)
+
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 8)
+
+    corner.CornerRadius =
+        UDim.new(0, radius or 8)
+
     corner.Parent = object
+
 end
 
-local function Clear(parent)
-    for _, child in ipairs(parent:GetChildren()) do
-        child:Destroy()
+--==================================================
+-- COLOR BUTTON
+--==================================================
+
+local function CreateColorRow(
+    parent,
+    name,
+    currentColor,
+    onChanged
+)
+
+    local Row =
+        Create(
+            "Frame",
+            {
+                Size =
+                    UDim2.new(1, 0, 0, 42),
+
+                BackgroundTransparency = 1
+            },
+            parent
+        )
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(0, 10, 0, 0),
+
+            Size =
+                UDim2.new(1, -65, 1, 0),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.GothamMedium,
+
+            Text = name,
+
+            TextColor3 =
+                Color3.fromRGB(
+                    255,
+                    255,
+                    255
+                ),
+
+            TextSize = 13,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Row
+    )
+
+    local ColorButton =
+        Create(
+            "TextButton",
+            {
+                Position =
+                    UDim2.new(1, -50, 0, 6),
+
+                Size =
+                    UDim2.new(0, 40, 0, 30),
+
+                BackgroundColor3 =
+                    currentColor,
+
+                BorderSizePixel = 0,
+
+                Text = ""
+            },
+            Row
+        )
+
+    Corner(ColorButton, 6)
+
+    ColorButton.MouseButton1Click:Connect(
+        function()
+
+            -- Simple RGB picker window.
+            -- The actual picker can be replaced
+            -- with your preferred picker later.
+
+            local oldPicker =
+                parent.Parent.Parent.Parent:
+                    FindFirstChild(
+                        "ColorPicker"
+                    )
+
+            if oldPicker then
+                oldPicker:Destroy()
+            end
+
+            local Picker =
+                Create(
+                    "Frame",
+                    {
+                        Name = "ColorPicker",
+
+                        AnchorPoint =
+                            Vector2.new(
+                                0.5,
+                                0.5
+                            ),
+
+                        Position =
+                            UDim2.new(
+                                0.5,
+                                0,
+                                0.5,
+                                0
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                0,
+                                300,
+                                0,
+                                250
+                            ),
+
+                        BackgroundColor3 =
+                            Color3.fromRGB(
+                                25,
+                                25,
+                                32
+                            ),
+
+                        BorderSizePixel = 0,
+
+                        ZIndex = 50
+                    },
+                    parent.Parent.Parent.Parent
+                )
+
+            Corner(Picker, 10)
+
+            Create(
+                "TextLabel",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            15,
+                            0,
+                            10
+                        ),
+
+                    Size =
+                        UDim2.new(
+                            1,
+                            -30,
+                            0,
+                            30
+                        ),
+
+                    BackgroundTransparency = 1,
+
+                    Font =
+                        Enum.Font.GothamBold,
+
+                    Text =
+                        "Change " .. name,
+
+                    TextColor3 =
+                        Color3.fromRGB(
+                            255,
+                            255,
+                            255
+                        ),
+
+                    TextSize = 16,
+
+                    ZIndex = 51
+                },
+                Picker
+            )
+
+            local r =
+                math.floor(
+                    currentColor.R * 255
+                )
+
+            local g =
+                math.floor(
+                    currentColor.G * 255
+                )
+
+            local b =
+                math.floor(
+                    currentColor.B * 255
+                )
+
+            local function CreateInput(
+                label,
+                value,
+                y
+            )
+
+                Create(
+                    "TextLabel",
+                    {
+                        Position =
+                            UDim2.new(
+                                0,
+                                20,
+                                0,
+                                y
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                0,
+                                30,
+                                0,
+                                30
+                            ),
+
+                        BackgroundTransparency = 1,
+
+                        Font =
+                            Enum.Font.GothamBold,
+
+                        Text = label,
+
+                        TextColor3 =
+                            Color3.fromRGB(
+                                255,
+                                255,
+                                255
+                            ),
+
+                        TextSize = 13,
+
+                        ZIndex = 51
+                    },
+                    Picker
+                )
+
+                local Input =
+                    Create(
+                        "TextBox",
+                        {
+                            Position =
+                                UDim2.new(
+                                    0,
+                                    55,
+                                    0,
+                                    y
+                                ),
+
+                            Size =
+                                UDim2.new(
+                                    0,
+                                    200,
+                                    0,
+                                    30
+                                ),
+
+                            BackgroundColor3 =
+                                Color3.fromRGB(
+                                    35,
+                                    35,
+                                    43
+                                ),
+
+                            BorderSizePixel = 0,
+
+                            Font =
+                                Enum.Font.Gotham,
+
+                            Text =
+                                tostring(value),
+
+                            TextColor3 =
+                                Color3.fromRGB(
+                                    255,
+                                    255,
+                                    255
+                                ),
+
+                            TextSize = 12,
+
+                            ClearTextOnFocus = false,
+
+                            ZIndex = 51
+                        },
+                        Picker
+                    )
+
+                Corner(Input, 6)
+
+                return Input
+            end
+
+            local R =
+                CreateInput(
+                    "R",
+                    r,
+                    50
+                )
+
+            local G =
+                CreateInput(
+                    "G",
+                    g,
+                    90
+                )
+
+            local B =
+                CreateInput(
+                    "B",
+                    b,
+                    130
+                )
+
+            local Apply =
+                Create(
+                    "TextButton",
+                    {
+                        Position =
+                            UDim2.new(
+                                0,
+                                20,
+                                0,
+                                180
+                            ),
+
+                        Size =
+                            UDim2.new(
+                                0,
+                                120,
+                                0,
+                                35
+                            ),
+
+                        BackgroundColor3 =
+                            Color3.fromRGB(
+                                45,
+                                45,
+                                58
+                            ),
+
+                        BorderSizePixel = 0,
+
+                        Font =
+                            Enum.Font.GothamBold,
+
+                        Text = "Apply",
+
+                        TextColor3 =
+                            Color3.fromRGB(
+                                255,
+                                255,
+                                255
+                            ),
+
+                        TextSize = 12,
+
+                        ZIndex = 51
+                    },
+                    Picker
+                )
+
+            Corner(Apply, 7)
+
+            Apply.MouseButton1Click:Connect(
+                function()
+
+                    local newR =
+                        math.clamp(
+                            tonumber(R.Text)
+                                or r,
+                            0,
+                            255
+                        )
+
+                    local newG =
+                        math.clamp(
+                            tonumber(G.Text)
+                                or g,
+                            0,
+                            255
+                        )
+
+                    local newB =
+                        math.clamp(
+                            tonumber(B.Text)
+                                or b,
+                            0,
+                            255
+                        )
+
+                    local newColor =
+                        Color3.fromRGB(
+                            newR,
+                            newG,
+                            newB
+                        )
+
+                    ColorButton.BackgroundColor3 =
+                        newColor
+
+                    onChanged(newColor)
+
+                    Picker:Destroy()
+
+                end
+            )
+
+        end
+    )
+
+    return Row
+end
+
+--==================================================
+-- APPLY THEME
+--==================================================
+
+local function ApplyTheme(state)
+
+    local theme =
+        state.Theme
+
+    if not theme then
+        return
     end
+
+    local Main =
+        state.Main
+
+    if Main then
+
+        Main.BackgroundColor3 =
+            theme.Background
+
+        Main.BackgroundTransparency =
+            state.Settings.BackgroundTransparency
+
+    end
+
+    if state.Sidebar then
+
+        state.Sidebar.BackgroundColor3 =
+            theme.Background
+
+    end
+
+    if state.TopBar then
+
+        state.TopBar.BackgroundColor3 =
+            theme.Panel
+
+    end
+
+    -- Floating icon deliberately NOT changed.
 end
 
 --==================================================
@@ -45,11 +522,36 @@ end
 function Settings.Start(state)
 
     if not state or not state.Content then
-        warn("[Areteon] Settings: Content was not provided.")
+
+        warn(
+            "[Areteon] Settings: Content missing."
+        )
+
         return nil
+
     end
 
-    local Content = state.Content
+    --==================================================
+    -- INITIAL STATE
+    --==================================================
+
+    state.Theme =
+        state.Theme
+        or
+        table.clone(
+            Settings.DefaultTheme
+        )
+
+    state.Settings =
+        state.Settings
+        or
+        table.clone(
+            Settings.DefaultSettings
+        )
+
+    --==================================================
+    -- PAGE
+    --==================================================
 
     local Page =
         Create(
@@ -58,7 +560,12 @@ function Settings.Start(state)
                 Name = "SettingsPage",
 
                 Size =
-                    UDim2.new(1, -20, 0, 650),
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        800
+                    ),
 
                 BackgroundTransparency = 1,
 
@@ -66,7 +573,7 @@ function Settings.Start(state)
 
                 Visible = false
             },
-            Content
+            state.Content
         )
 
     --==================================================
@@ -76,13 +583,21 @@ function Settings.Start(state)
     Create(
         "TextLabel",
         {
-            Name = "Title",
-
             Position =
-                UDim2.new(0, 15, 0, 15),
+                UDim2.new(
+                    0,
+                    15,
+                    0,
+                    15
+                ),
 
             Size =
-                UDim2.new(1, -30, 0, 35),
+                UDim2.new(
+                    1,
+                    -30,
+                    0,
+                    35
+                ),
 
             BackgroundTransparency = 1,
 
@@ -92,11 +607,7 @@ function Settings.Start(state)
             Text = "Settings",
 
             TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
+                state.Theme.Primary,
 
             TextSize = 22,
 
@@ -107,6 +618,185 @@ function Settings.Start(state)
     )
 
     --==================================================
+    -- COLORS SECTION
+    --==================================================
+
+    local Colors =
+        Create(
+            "Frame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        15,
+                        0,
+                        65
+                    ),
+
+                Size =
+                    UDim2.new(
+                        1,
+                        -30,
+                        0,
+                        300
+                    ),
+
+                BackgroundColor3 =
+                    state.Theme.Panel,
+
+                BorderSizePixel = 0
+            },
+            Page
+        )
+
+    Corner(Colors, 10)
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0,
+                    15,
+                    0,
+                    10
+                ),
+
+            Size =
+                UDim2.new(
+                    1,
+                    -30,
+                    0,
+                    30
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.GothamBold,
+
+            Text = "Colors",
+
+            TextColor3 =
+                state.Theme.Primary,
+
+            TextSize = 15,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        Colors
+    )
+
+    local ColorList =
+        Create(
+            "Frame",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        10,
+                        0,
+                        48
+                    ),
+
+                Size =
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        240
+                    ),
+
+                BackgroundTransparency = 1
+            },
+            Colors
+        )
+
+    Create(
+        "UIListLayout",
+        {
+            Padding =
+                UDim.new(
+                    0,
+                    2
+                ),
+
+            SortOrder =
+                Enum.SortOrder.LayoutOrder
+        },
+        ColorList
+    )
+
+    local function ChangeColor(name, color)
+
+        state.Theme[name] = color
+
+        ApplyTheme(state)
+
+    end
+
+    CreateColorRow(
+        ColorList,
+        "Background",
+        state.Theme.Background,
+        function(color)
+            ChangeColor(
+                "Background",
+                color
+            )
+        end
+    )
+
+    CreateColorRow(
+        ColorList,
+        "Primary",
+        state.Theme.Primary,
+        function(color)
+            ChangeColor(
+                "Primary",
+                color
+            )
+        end
+    )
+
+    CreateColorRow(
+        ColorList,
+        "Secondary",
+        state.Theme.Secondary,
+        function(color)
+            ChangeColor(
+                "Secondary",
+                color
+            )
+        end
+    )
+
+    CreateColorRow(
+        ColorList,
+        "Buttons",
+        state.Theme.Buttons,
+        function(color)
+            ChangeColor(
+                "Buttons",
+                color
+            )
+        end
+    )
+
+    CreateColorRow(
+        ColorList,
+        "Panel",
+        state.Theme.Panel,
+        function(color)
+            ChangeColor(
+                "Panel",
+                color
+            )
+        end
+    )
+
+    --==================================================
     -- GENERAL
     --==================================================
 
@@ -114,20 +804,24 @@ function Settings.Start(state)
         Create(
             "Frame",
             {
-                Name = "General",
-
                 Position =
-                    UDim2.new(0, 15, 0, 65),
+                    UDim2.new(
+                        0,
+                        15,
+                        0,
+                        380
+                    ),
 
                 Size =
-                    UDim2.new(1, -30, 0, 190),
+                    UDim2.new(
+                        1,
+                        -30,
+                        0,
+                        150
+                    ),
 
                 BackgroundColor3 =
-                    Color3.fromRGB(
-                        22,
-                        22,
-                        28
-                    ),
+                    state.Theme.Panel,
 
                 BorderSizePixel = 0
             },
@@ -136,73 +830,29 @@ function Settings.Start(state)
 
     Corner(General, 10)
 
-    Create(
-        "TextLabel",
-        {
-            Position =
-                UDim2.new(0, 15, 0, 12),
-
-            Size =
-                UDim2.new(1, -30, 0, 25),
-
-            BackgroundTransparency = 1,
-
-            Font =
-                Enum.Font.GothamBold,
-
-            Text = "General Settings",
-
-            TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
-
-            TextSize = 15,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        General
-    )
-
-    --==================================================
-    -- HUB TOGGLE
-    --==================================================
-
-    local HubToggle =
+    local GeneralButton =
         Create(
             "TextButton",
             {
-                Position =
-                    UDim2.new(0, 15, 0, 52),
-
                 Size =
-                    UDim2.new(1, -30, 0, 40),
-
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        35,
-                        35,
-                        43
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        42
                     ),
 
-                BorderSizePixel = 0,
+                BackgroundTransparency = 1,
 
                 Font =
-                    Enum.Font.GothamMedium,
+                    Enum.Font.GothamBold,
 
-                Text = "Hub: Enabled",
+                Text = "▼  General",
 
                 TextColor3 =
-                    Color3.fromRGB(
-                        225,
-                        225,
-                        230
-                    ),
+                    state.Theme.Primary,
 
-                TextSize = 13,
+                TextSize = 14,
 
                 TextXAlignment =
                     Enum.TextXAlignment.Left
@@ -210,252 +860,210 @@ function Settings.Start(state)
             General
         )
 
-    Corner(HubToggle, 7)
-
     Create(
         "UIPadding",
         {
-            PaddingLeft = UDim.new(0, 12)
+            PaddingLeft =
+                UDim.new(
+                    0,
+                    15
+                )
         },
-        HubToggle
+        GeneralButton
     )
 
-    local hubEnabled = true
-
-    HubToggle.MouseButton1Click:Connect(function()
-
-        hubEnabled = not hubEnabled
-
-        if hubEnabled then
-            HubToggle.Text = "Hub: Enabled"
-        else
-            HubToggle.Text = "Hub: Disabled"
-        end
-
-    end)
-
-    --==================================================
-    -- RESET SCROLL
-    --==================================================
-
-    local ResetScroll =
-        Create(
-            "TextButton",
-            {
-                Position =
-                    UDim2.new(0, 15, 0, 102),
-
-                Size =
-                    UDim2.new(1, -30, 0, 40),
-
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        35,
-                        35,
-                        43
-                    ),
-
-                BorderSizePixel = 0,
-
-                Font =
-                    Enum.Font.GothamMedium,
-
-                Text = "Reset Scroll Position",
-
-                TextColor3 =
-                    Color3.fromRGB(
-                        225,
-                        225,
-                        230
-                    ),
-
-                TextSize = 13,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            General
-        )
-
-    Corner(ResetScroll, 7)
-
-    Create(
-        "UIPadding",
-        {
-            PaddingLeft = UDim.new(0, 12)
-        },
-        ResetScroll
-    )
-
-    ResetScroll.MouseButton1Click:Connect(function()
-
-        if state.ContentScroll then
-
-            state.ContentScroll.CanvasPosition =
-                Vector2.new(0, 0)
-
-        end
-
-    end)
-
-    --==================================================
-    -- ACCESS INFO
-    --==================================================
-
-    local Access =
+    local GeneralContent =
         Create(
             "Frame",
             {
-                Name = "Access",
-
                 Position =
-                    UDim2.new(0, 15, 0, 270),
-
-                Size =
-                    UDim2.new(1, -30, 0, 150),
-
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        22,
-                        22,
-                        28
+                    UDim2.new(
+                        0,
+                        10,
+                        0,
+                        45
                     ),
 
-                BorderSizePixel = 0
+                Size =
+                    UDim2.new(
+                        1,
+                        -20,
+                        0,
+                        95
+                    ),
+
+                BackgroundTransparency = 1
             },
-            Page
+            General
         )
 
-    Corner(Access, 10)
+    local TransparencyLabel =
+        Create(
+            "TextLabel",
+            {
+                Position =
+                    UDim2.new(
+                        0,
+                        5,
+                        0,
+                        5
+                    ),
 
-    Create(
-        "TextLabel",
-        {
-            Position =
-                UDim2.new(0, 15, 0, 12),
+                Size =
+                    UDim2.new(
+                        0.5,
+                        0,
+                        0,
+                        30
+                    ),
 
-            Size =
-                UDim2.new(1, -30, 0, 25),
+                BackgroundTransparency = 1,
 
-            BackgroundTransparency = 1,
+                Font =
+                    Enum.Font.GothamMedium,
 
-            Font =
-                Enum.Font.GothamBold,
+                Text =
+                    "Background Transparency",
 
-            Text = "Access",
+                TextColor3 =
+                    state.Theme.Primary,
 
-            TextColor3 =
-                Color3.fromRGB(
-                    255,
-                    255,
-                    255
-                ),
+                TextSize = 12,
 
-            TextSize = 15,
+                TextXAlignment =
+                    Enum.TextXAlignment.Left
+            },
+            GeneralContent
+        )
 
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        Access
+    local TransparencyBox =
+        Create(
+            "TextBox",
+            {
+                Position =
+                    UDim2.new(
+                        0.55,
+                        0,
+                        0,
+                        3
+                    ),
+
+                Size =
+                    UDim2.new(
+                        0.4,
+                        0,
+                        0,
+                        32
+                    ),
+
+                BackgroundColor3 =
+                    state.Theme.Background,
+
+                BorderSizePixel = 0,
+
+                Font =
+                    Enum.Font.Gotham,
+
+                Text =
+                    tostring(
+                        state.Settings
+                            .BackgroundTransparency
+                            * 100
+                    ),
+
+                TextColor3 =
+                    state.Theme.Primary,
+
+                TextSize = 12,
+
+                ClearTextOnFocus = false
+            },
+            GeneralContent
+        )
+
+    Corner(TransparencyBox, 6)
+
+    TransparencyBox.FocusLost:Connect(
+        function()
+
+            local value =
+                tonumber(
+                    TransparencyBox.Text
+                )
+
+            if value then
+
+                value =
+                    math.clamp(
+                        value,
+                        0,
+                        100
+                    )
+
+                state.Settings
+                    .BackgroundTransparency =
+                    value / 100
+
+                TransparencyBox.Text =
+                    tostring(value)
+
+                ApplyTheme(state)
+
+            end
+
+        end
     )
 
-    Create(
-        "TextLabel",
-        {
-            Position =
-                UDim2.new(0, 15, 0, 48),
+    GeneralButton.MouseButton1Click:Connect(
+        function()
 
-            Size =
-                UDim2.new(1, -30, 0, 25),
+            local open =
+                GeneralContent.Visible
 
-            BackgroundTransparency = 1,
+            GeneralContent.Visible =
+                not open
 
-            Font =
-                Enum.Font.Gotham,
+            if open then
+                GeneralButton.Text =
+                    "▶  General"
+            else
+                GeneralButton.Text =
+                    "▼  General"
+            end
 
-            Text =
-                "Access Type: " ..
-                tostring(
-                    state.AccessType or "USER"
-                ),
-
-            TextColor3 =
-                Color3.fromRGB(
-                    200,
-                    200,
-                    205
-                ),
-
-            TextSize = 13,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        Access
-    )
-
-    Create(
-        "TextLabel",
-        {
-            Position =
-                UDim2.new(0, 15, 0, 78),
-
-            Size =
-                UDim2.new(1, -30, 0, 25),
-
-            BackgroundTransparency = 1,
-
-            Font =
-                Enum.Font.Gotham,
-
-            Text =
-                "UserId: " ..
-                tostring(
-                    LocalPlayer.UserId
-                ),
-
-            TextColor3 =
-                Color3.fromRGB(
-                    160,
-                    160,
-                    168
-                ),
-
-            TextSize = 12,
-
-            TextXAlignment =
-                Enum.TextXAlignment.Left
-        },
-        Access
+        end
     )
 
     --==================================================
     -- ADMIN PANEL
     --==================================================
 
-    local IsAdmin =
-        state.IsAdmin == true
+    local AdminPanel
 
-    if IsAdmin then
+    if state.IsAdmin then
 
-        local AdminPanel =
+        AdminPanel =
             Create(
                 "Frame",
                 {
-                    Name = "AdminPanel",
-
                     Position =
-                        UDim2.new(0, 15, 0, 435),
+                        UDim2.new(
+                            0,
+                            15,
+                            0,
+                            545
+                        ),
 
                     Size =
-                        UDim2.new(1, -30, 0, 170),
+                        UDim2.new(
+                            1,
+                            -30,
+                            0,
+                            300
+                        ),
 
                     BackgroundColor3 =
-                        Color3.fromRGB(
-                            22,
-                            22,
-                            28
-                        ),
+                        state.Theme.Panel,
 
                     BorderSizePixel = 0
                 },
@@ -464,50 +1072,98 @@ function Settings.Start(state)
 
         Corner(AdminPanel, 10)
 
+        local AdminButton =
+            Create(
+                "TextButton",
+                {
+                    Size =
+                        UDim2.new(
+                            1,
+                            0,
+                            0,
+                            42
+                        ),
+
+                    BackgroundTransparency = 1,
+
+                    Font =
+                        Enum.Font.GothamBold,
+
+                    Text = "▶  Admin Panel",
+
+                    TextColor3 =
+                        state.Theme.Primary,
+
+                    TextSize = 14,
+
+                    TextXAlignment =
+                        Enum.TextXAlignment.Left
+                },
+                AdminPanel
+            )
+
         Create(
-            "TextLabel",
+            "UIPadding",
             {
-                Position =
-                    UDim2.new(0, 15, 0, 12),
-
-                Size =
-                    UDim2.new(1, -30, 0, 25),
-
-                BackgroundTransparency = 1,
-
-                Font =
-                    Enum.Font.GothamBold,
-
-                Text = "Admin Panel",
-
-                TextColor3 =
-                    Color3.fromRGB(
-                        255,
-                        255,
-                        255
-                    ),
-
-                TextSize = 15,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
+                PaddingLeft =
+                    UDim.new(
+                        0,
+                        15
+                    )
             },
-            AdminPanel
+            AdminButton
         )
 
+        local AdminContent =
+            Create(
+                "Frame",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            10,
+                            0,
+                            45
+                        ),
+
+                    Size =
+                        UDim2.new(
+                            1,
+                            -20,
+                            0,
+                            240
+                        ),
+
+                    BackgroundTransparency = 1,
+
+                    Visible = false
+                },
+                AdminPanel
+            )
+
         Create(
             "TextLabel",
             {
                 Position =
-                    UDim2.new(0, 15, 0, 48),
+                    UDim2.new(
+                        0,
+                        5,
+                        0,
+                        5
+                    ),
 
                 Size =
-                    UDim2.new(1, -30, 0, 25),
+                    UDim2.new(
+                        1,
+                        -10,
+                        0,
+                        30
+                    ),
 
                 BackgroundTransparency = 1,
 
                 Font =
-                    Enum.Font.Gotham,
+                    Enum.Font.GothamMedium,
 
                 Text =
                     "Online Players: " ..
@@ -516,28 +1172,34 @@ function Settings.Start(state)
                     ),
 
                 TextColor3 =
-                    Color3.fromRGB(
-                        200,
-                        200,
-                        205
-                    ),
+                    state.Theme.Primary,
 
                 TextSize = 13,
 
                 TextXAlignment =
                     Enum.TextXAlignment.Left
             },
-            AdminPanel
+            AdminContent
         )
 
         Create(
             "TextLabel",
             {
                 Position =
-                    UDim2.new(0, 15, 0, 80),
+                    UDim2.new(
+                        0,
+                        5,
+                        0,
+                        40
+                    ),
 
                 Size =
-                    UDim2.new(1, -30, 0, 25),
+                    UDim2.new(
+                        1,
+                        -10,
+                        0,
+                        30
+                    ),
 
                 BackgroundTransparency = 1,
 
@@ -545,91 +1207,46 @@ function Settings.Start(state)
                     Enum.Font.Gotham,
 
                 Text =
-                    "Admin access is enabled.",
+                    "Player Name / Status / Key Status / Time Remaining",
 
                 TextColor3 =
-                    Color3.fromRGB(
-                        170,
-                        170,
-                        178
-                    ),
+                    state.Theme.Secondary,
 
                 TextSize = 12,
 
                 TextXAlignment =
                     Enum.TextXAlignment.Left
             },
-            AdminPanel
+            AdminContent
         )
 
-        local Refresh =
-            Create(
-                "TextButton",
-                {
-                    Position =
-                        UDim2.new(
-                            0,
-                            15,
-                            0,
-                            115
-                        ),
+        AdminButton.MouseButton1Click:Connect(
+            function()
 
-                    Size =
-                        UDim2.new(
-                            0,
-                            150,
-                            0,
-                            35
-                        ),
+                local open =
+                    AdminContent.Visible
 
-                    BackgroundColor3 =
-                        Color3.fromRGB(
-                            35,
-                            35,
-                            43
-                        ),
+                AdminContent.Visible =
+                    not open
 
-                    BorderSizePixel = 0,
+                if open then
+                    AdminButton.Text =
+                        "▶  Admin Panel"
+                else
+                    AdminButton.Text =
+                        "▼  Admin Panel"
+                end
 
-                    Font =
-                        Enum.Font.GothamMedium,
-
-                    Text = "Refresh",
-
-                    TextColor3 =
-                        Color3.fromRGB(
-                            225,
-                            225,
-                            230
-                        ),
-
-                    TextSize = 12
-                },
-                AdminPanel
-            )
-
-        Corner(Refresh, 7)
-
-        Refresh.MouseButton1Click:Connect(function()
-
-            -- Update the player count.
-
-            local count =
-                AdminPanel:FindFirstChild(
-                    "OnlinePlayers"
-                )
-
-            if count then
-                count.Text =
-                    "Online Players: " ..
-                    tostring(
-                        #Players:GetPlayers()
-                    )
             end
-
-        end)
+        )
 
     end
+
+    --==================================================
+    -- APPLY INITIAL THEME
+    --==================================================
+
+    ApplyTheme(state)
 
     return Page
 end
