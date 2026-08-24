@@ -7,7 +7,7 @@ local Settings = {}
 local Players = game:GetService("Players")
 
 --==================================================
--- DEFAULT CONFIG
+-- DEFAULT THEME
 --==================================================
 
 Settings.DefaultTheme = {
@@ -51,19 +51,75 @@ local function Corner(object, radius)
 end
 
 --==================================================
+-- FORMAT TIME
+--==================================================
+
+local function FormatTime(seconds)
+
+    seconds = tonumber(seconds) or 0
+
+    if seconds <= 0 then
+        return "Expired"
+    end
+
+    local days = math.floor(
+        seconds / 86400
+    )
+
+    seconds = seconds % 86400
+
+    local hours = math.floor(
+        seconds / 3600
+    )
+
+    seconds = seconds % 3600
+
+    local minutes = math.floor(
+        seconds / 60
+    )
+
+    if days > 0 then
+        return string.format(
+            "%dd %dh",
+            days,
+            hours
+        )
+    end
+
+    if hours > 0 then
+        return string.format(
+            "%dh %dm",
+            hours,
+            minutes
+        )
+    end
+
+    return string.format(
+        "%dm",
+        minutes
+    )
+end
+
+--==================================================
 -- APPLY THEME
 --==================================================
 
 local function ApplyTheme(state)
 
-    if not state or not state.Theme then
+    if not state then
+        return
+    end
+
+    if not state.Theme then
         return
     end
 
     local theme = state.Theme
 
     if state.Main then
-        state.Main.BackgroundColor3 = theme.Background
+        state.Main.BackgroundColor3 =
+            theme.Background
+
         state.Main.BackgroundTransparency =
             state.Settings.BackgroundTransparency
     end
@@ -79,7 +135,7 @@ local function ApplyTheme(state)
     end
 
     -- Floating icon intentionally
-    -- does not use the theme colors.
+    -- does not use the theme.
 end
 
 --==================================================
@@ -98,11 +154,9 @@ local function OpenColorPicker(
         state.ColorPicker = nil
     end
 
-    local gui = state.Gui
-
-    if not gui then
+    if not state.Gui then
         warn(
-            "[Areteon] Settings: state.Gui missing."
+            "[Areteon] Settings: Gui missing."
         )
 
         return
@@ -114,7 +168,10 @@ local function OpenColorPicker(
             Name = "ColorPicker",
 
             AnchorPoint =
-                Vector2.new(0.5, 0.5),
+                Vector2.new(
+                    0.5,
+                    0.5
+                ),
 
             Position =
                 UDim2.new(
@@ -143,7 +200,7 @@ local function OpenColorPicker(
 
             ZIndex = 100
         },
-        gui
+        state.Gui
     )
 
     Corner(picker, 10)
@@ -235,7 +292,7 @@ local function OpenColorPicker(
     Corner(preview, 6)
 
     --==================================================
-    -- RGB VALUES
+    -- RGB
     --==================================================
 
     local red =
@@ -252,10 +309,6 @@ local function OpenColorPicker(
         math.floor(
             currentColor.B * 255
         )
-
-    --==================================================
-    -- INPUT
-    --==================================================
 
     local function MakeInput(
         label,
@@ -379,10 +432,6 @@ local function OpenColorPicker(
             185
         )
 
-    --==================================================
-    -- PREVIEW UPDATE
-    --==================================================
-
     local function GetValue(text)
 
         local value =
@@ -401,55 +450,34 @@ local function OpenColorPicker(
 
     local function UpdatePreview()
 
-        local r =
-            GetValue(
-                redBox.Text
-            )
-
-        local g =
-            GetValue(
-                greenBox.Text
-            )
-
-        local b =
-            GetValue(
-                blueBox.Text
-            )
-
         preview.BackgroundColor3 =
             Color3.fromRGB(
-                r,
-                g,
-                b
+                GetValue(redBox.Text),
+                GetValue(greenBox.Text),
+                GetValue(blueBox.Text)
             )
     end
 
-    redBox
-        :GetPropertyChangedSignal(
-            "Text"
-        )
-        :Connect(
-            UpdatePreview
-        )
+    redBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(
+        UpdatePreview
+    )
 
-    greenBox
-        :GetPropertyChangedSignal(
-            "Text"
-        )
-        :Connect(
-            UpdatePreview
-        )
+    greenBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(
+        UpdatePreview
+    )
 
-    blueBox
-        :GetPropertyChangedSignal(
-            "Text"
-        )
-        :Connect(
-            UpdatePreview
-        )
+    blueBox:GetPropertyChangedSignal(
+        "Text"
+    ):Connect(
+        UpdatePreview
+    )
 
     --==================================================
-    -- APPLY BUTTON
+    -- APPLY
     --==================================================
 
     local apply = Create(
@@ -504,26 +532,11 @@ local function OpenColorPicker(
     apply.MouseButton1Click:Connect(
         function()
 
-            local r =
-                GetValue(
-                    redBox.Text
-                )
-
-            local g =
-                GetValue(
-                    greenBox.Text
-                )
-
-            local b =
-                GetValue(
-                    blueBox.Text
-                )
-
             local color =
                 Color3.fromRGB(
-                    r,
-                    g,
-                    b
+                    GetValue(redBox.Text),
+                    GetValue(greenBox.Text),
+                    GetValue(blueBox.Text)
                 )
 
             callback(color)
@@ -535,7 +548,7 @@ local function OpenColorPicker(
     )
 
     --==================================================
-    -- CANCEL BUTTON
+    -- CANCEL
     --==================================================
 
     local cancel = Create(
@@ -751,10 +764,6 @@ local function CreateDropdown(
 
     Corner(box, 10)
 
-    --==================================================
-    -- HEADER
-    --==================================================
-
     local header = Create(
         "TextButton",
         {
@@ -797,10 +806,6 @@ local function CreateDropdown(
         header
     )
 
-    --==================================================
-    -- CONTENT
-    --==================================================
-
     local content = Create(
         "Frame",
         {
@@ -826,10 +831,6 @@ local function CreateDropdown(
     )
 
     local expanded = true
-
-    --==================================================
-    -- DROPDOWN CLICK
-    --==================================================
 
     header.MouseButton1Click:Connect(
         function()
@@ -873,6 +874,311 @@ local function CreateDropdown(
 end
 
 --==================================================
+-- ADMIN PLAYER ROW
+--==================================================
+
+local function CreateAdminPlayerRow(
+    state,
+    parent,
+    player
+)
+
+    local userId = player.UserId
+
+    local isAdmin =
+        state.Admins
+        and state.Admins[userId] == true
+
+    local isException =
+        state.Exceptions
+        and state.Exceptions[userId] == true
+
+    local data =
+        state.KeyData
+        and state.KeyData[userId]
+
+    local status = "Free"
+    local keyStatus = "No Key"
+    local timeRemaining = "N/A"
+
+    if isAdmin then
+
+        status = "ADMIN"
+        keyStatus = "Bypass"
+        timeRemaining = "∞"
+
+    elseif isException then
+
+        status = "EXCEPTION"
+        keyStatus = "Bypass"
+        timeRemaining = "∞"
+
+    elseif data then
+
+        status =
+            data.Status
+            or "Free"
+
+        keyStatus =
+            data.KeyStatus
+            or "Unknown"
+
+        if data.ExpiresAt then
+
+            local remaining =
+                data.ExpiresAt -
+                os.time()
+
+            timeRemaining =
+                FormatTime(
+                    remaining
+                )
+
+        elseif data.TimeRemaining then
+
+            timeRemaining =
+                FormatTime(
+                    data.TimeRemaining
+                )
+        end
+    end
+
+    local row = Create(
+        "Frame",
+        {
+            Size =
+                UDim2.new(
+                    1,
+                    -5,
+                    0,
+                    64
+                ),
+
+            BackgroundColor3 =
+                state.Theme.Background,
+
+            BorderSizePixel = 0
+        },
+        parent
+    )
+
+    Corner(row, 7)
+
+    --==================================================
+    -- NAME
+    --==================================================
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0,
+                    10,
+                    0,
+                    5
+                ),
+
+            Size =
+                UDim2.new(
+                    0.28,
+                    0,
+                    0,
+                    22
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.GothamBold,
+
+            Text =
+                player.Name,
+
+            TextColor3 =
+                state.Theme.Primary,
+
+            TextSize = 12,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        row
+    )
+
+    --==================================================
+    -- STATUS
+    --==================================================
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0.28,
+                    0,
+                    0,
+                    5
+                ),
+
+            Size =
+                UDim2.new(
+                    0.24,
+                    0,
+                    0,
+                    22
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.GothamMedium,
+
+            Text =
+                status,
+
+            TextColor3 =
+                state.Theme.Primary,
+
+            TextSize = 11,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        row
+    )
+
+    --==================================================
+    -- KEY
+    --==================================================
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0.52,
+                    0,
+                    0,
+                    5
+                ),
+
+            Size =
+                UDim2.new(
+                    0.23,
+                    0,
+                    0,
+                    22
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.Gotham,
+
+            Text =
+                keyStatus,
+
+            TextColor3 =
+                state.Theme.Secondary,
+
+            TextSize = 11,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        row
+    )
+
+    --==================================================
+    -- TIME
+    --==================================================
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0.75,
+                    0,
+                    0,
+                    5
+                ),
+
+            Size =
+                UDim2.new(
+                    0.25,
+                    -10,
+                    0,
+                    22
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.Gotham,
+
+            Text =
+                timeRemaining,
+
+            TextColor3 =
+                state.Theme.Secondary,
+
+            TextSize = 11,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Right
+        },
+        row
+    )
+
+    --==================================================
+    -- USER ID
+    --==================================================
+
+    Create(
+        "TextLabel",
+        {
+            Position =
+                UDim2.new(
+                    0,
+                    10,
+                    0,
+                    34
+                ),
+
+            Size =
+                UDim2.new(
+                    1,
+                    -20,
+                    0,
+                    18
+                ),
+
+            BackgroundTransparency = 1,
+
+            Font =
+                Enum.Font.Gotham,
+
+            Text =
+                "UserId: " ..
+                tostring(userId),
+
+            TextColor3 =
+                state.Theme.Secondary,
+
+            TextSize = 10,
+
+            TextXAlignment =
+                Enum.TextXAlignment.Left
+        },
+        row
+    )
+
+    return row
+end
+
+--==================================================
 -- START
 --==================================================
 
@@ -880,8 +1186,7 @@ function Settings.Start(state)
 
     if not state then
         warn(
-            "[Areteon] Settings: " ..
-            "state is missing."
+            "[Areteon] Settings: state missing."
         )
 
         return nil
@@ -890,7 +1195,7 @@ function Settings.Start(state)
     if not state.Content then
         warn(
             "[Areteon] Settings: " ..
-            "state.Content is missing."
+            "state.Content missing."
         )
 
         return nil
@@ -901,7 +1206,9 @@ function Settings.Start(state)
     --==================================================
 
     state.Theme =
-        state.Theme or {
+        state.Theme
+        or
+        {
             Background =
                 Settings.DefaultTheme.Background,
 
@@ -919,11 +1226,28 @@ function Settings.Start(state)
         }
 
     state.Settings =
-        state.Settings or {
+        state.Settings
+        or
+        {
             BackgroundTransparency =
                 Settings.DefaultSettings
                     .BackgroundTransparency
         }
+
+    state.Admins =
+        state.Admins
+        or
+        {}
+
+    state.Exceptions =
+        state.Exceptions
+        or
+        {}
+
+    state.KeyData =
+        state.KeyData
+        or
+        {}
 
     --==================================================
     -- PAGE
@@ -993,7 +1317,7 @@ function Settings.Start(state)
     )
 
     --==================================================
-    -- MAIN LIST
+    -- LIST
     --==================================================
 
     local list = Create(
@@ -1036,7 +1360,7 @@ function Settings.Start(state)
     )
 
     --==================================================
-    -- COLORS BOX
+    -- COLORS
     --==================================================
 
     local colorsBox, colorsContent =
@@ -1046,10 +1370,6 @@ function Settings.Start(state)
             "Colors",
             250
         )
-
-    -- IMPORTANT:
-    -- This layout prevents the color rows
-    -- from overlapping each other.
 
     Create(
         "UIListLayout",
@@ -1097,7 +1417,7 @@ function Settings.Start(state)
     )
 
     --==================================================
-    -- GENERAL BOX
+    -- GENERAL
     --==================================================
 
     local generalBox, generalContent =
@@ -1236,49 +1556,47 @@ function Settings.Start(state)
                 state,
                 list,
                 "Admin Panel",
-                240
+                300
             )
 
-        Create(
-            "TextLabel",
-            {
-                Position =
-                    UDim2.new(
-                        0,
-                        5,
-                        0,
-                        5
-                    ),
+        local onlineLabel =
+            Create(
+                "TextLabel",
+                {
+                    Position =
+                        UDim2.new(
+                            0,
+                            5,
+                            0,
+                            5
+                        ),
 
-                Size =
-                    UDim2.new(
-                        1,
-                        -10,
-                        0,
-                        30
-                    ),
+                    Size =
+                        UDim2.new(
+                            1,
+                            -10,
+                            0,
+                            25
+                        ),
 
-                BackgroundTransparency = 1,
+                    BackgroundTransparency = 1,
 
-                Font =
-                    Enum.Font.GothamMedium,
+                    Font =
+                        Enum.Font.GothamBold,
 
-                Text =
-                    "Online Players: " ..
-                    tostring(
-                        #Players:GetPlayers()
-                    ),
+                    Text =
+                        "Online Players",
 
-                TextColor3 =
-                    state.Theme.Primary,
+                    TextColor3 =
+                        state.Theme.Primary,
 
-                TextSize = 13,
+                    TextSize = 14,
 
-                TextXAlignment =
-                    Enum.TextXAlignment.Left
-            },
-            adminContent
-        )
+                    TextXAlignment =
+                        Enum.TextXAlignment.Left
+                },
+                adminContent
+            )
 
         local playerList = Create(
             "ScrollingFrame",
@@ -1288,7 +1606,7 @@ function Settings.Start(state)
                         0,
                         5,
                         0,
-                        42
+                        35
                     ),
 
                 Size =
@@ -1296,7 +1614,7 @@ function Settings.Start(state)
                         1,
                         -10,
                         0,
-                        175
+                        245
                     ),
 
                 BackgroundTransparency = 1,
@@ -1314,7 +1632,9 @@ function Settings.Start(state)
                 AutomaticCanvasSize =
                     Enum.AutomaticSize.Y,
 
-                ScrollBarThickness = 5
+                ScrollBarThickness = 5,
+
+                ScrollBarImageTransparency = 0.2
             },
             adminContent
         )
@@ -1336,6 +1656,12 @@ function Settings.Start(state)
 
         local function RefreshPlayers()
 
+            onlineLabel.Text =
+                "Online Players: " ..
+                tostring(
+                    #Players:GetPlayers()
+                )
+
             for _, child in
                 ipairs(
                     playerList:GetChildren()
@@ -1356,139 +1682,10 @@ function Settings.Start(state)
                 )
             do
 
-                local row = Create(
-                    "Frame",
-                    {
-                        Size =
-                            UDim2.new(
-                                1,
-                                -5,
-                                0,
-                                50
-                            ),
-
-                        BackgroundColor3 =
-                            state.Theme.Background,
-
-                        BorderSizePixel = 0
-                    },
-                    playerList
-                )
-
-                Corner(row, 6)
-
-                Create(
-                    "TextLabel",
-                    {
-                        Position =
-                            UDim2.new(
-                                0,
-                                10,
-                                0,
-                                5
-                            ),
-
-                        Size =
-                            UDim2.new(
-                                0.45,
-                                0,
-                                0,
-                                20
-                            ),
-
-                        BackgroundTransparency = 1,
-
-                        Font =
-                            Enum.Font.GothamMedium,
-
-                        Text =
-                            player.Name,
-
-                        TextColor3 =
-                            state.Theme.Primary,
-
-                        TextSize = 12,
-
-                        TextXAlignment =
-                            Enum.TextXAlignment.Left
-                    },
-                    row
-                )
-
-                Create(
-                    "TextLabel",
-                    {
-                        Position =
-                            UDim2.new(
-                                0.45,
-                                0,
-                                0,
-                                5
-                            ),
-
-                        Size =
-                            UDim2.new(
-                                0.55,
-                                -10,
-                                0,
-                                20
-                            ),
-
-                        BackgroundTransparency = 1,
-
-                        Font =
-                            Enum.Font.Gotham,
-
-                        Text =
-                            "Status: Unknown",
-
-                        TextColor3 =
-                            state.Theme.Secondary,
-
-                        TextSize = 11,
-
-                        TextXAlignment =
-                            Enum.TextXAlignment.Right
-                    },
-                    row
-                )
-
-                Create(
-                    "TextLabel",
-                    {
-                        Position =
-                            UDim2.new(
-                                0,
-                                10,
-                                0,
-                                27
-                            ),
-
-                        Size =
-                            UDim2.new(
-                                1,
-                                -20,
-                                0,
-                                17
-                            ),
-
-                        BackgroundTransparency = 1,
-
-                        Font =
-                            Enum.Font.Gotham,
-
-                        Text =
-                            "Key: Unknown  •  Time: N/A",
-
-                        TextColor3 =
-                            state.Theme.Secondary,
-
-                        TextSize = 10,
-
-                        TextXAlignment =
-                            Enum.TextXAlignment.Left
-                    },
-                    row
+                CreateAdminPlayerRow(
+                    state,
+                    playerList,
+                    player
                 )
             end
         end
@@ -1505,7 +1702,7 @@ function Settings.Start(state)
     end
 
     --==================================================
-    -- INITIAL THEME
+    -- APPLY INITIAL THEME
     --==================================================
 
     ApplyTheme(state)
